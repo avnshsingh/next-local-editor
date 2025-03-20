@@ -6,16 +6,18 @@ import Transcript from "@/component/Transcript";
 import { Button } from "@/components/ui/button";
 
 import ModelManager from "@/component/ModelManager";
+import TranscriberSTT from "@/component/TranscriberSTT";
 
 export default function Page() {
   return (
     <div>
-      {" "}
       <NoSSRWrapper>
         {/* <Home /> */}
         {/* <Transcript /> */}
         {/* <ModelManager /> */}
-        <Video />
+        {/* <Video /> */}
+        <h1>Home Page</h1>
+        <TranscriberSTT />
       </NoSSRWrapper>
     </div>
   );

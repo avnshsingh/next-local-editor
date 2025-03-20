@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pipeline, pipeline } from "@xenova/transformers";
 import { ProgressItemTransformer } from "@/lib/types";
 
-export default function Transcript() {
+export default function TranscriptPage() {
   const [transcript, setTranscript] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
