@@ -9,10 +9,14 @@ import ModelManager from "@/component/ModelManager";
 
 export default function Page() {
   return (
-    <NoSSRWrapper>
-      {/* <Home /> */}
-      <Transcript />
-      <ModelManager />
-    </NoSSRWrapper>
+    <div>
+      {" "}
+      <NoSSRWrapper>
+        {/* <Home /> */}
+        {/* <Transcript /> */}
+        {/* <ModelManager /> */}
+        <Video />
+      </NoSSRWrapper>
+    </div>
   );
 }

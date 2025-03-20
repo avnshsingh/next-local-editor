@@ -1,13 +1,135 @@
+import { AppSidebar } from "@/components/app-sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
-import React, { useEffect, useRef, useState } from "react";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { Loader2 } from "lucide-react";
+import { VideoTimeline } from "@/components/VideoTimeline";
+import { formatAudioTimestamp } from "@/lib/AudioUtils";
+import { ArchiveX, Command, File, Inbox, Send, Trash2 } from "lucide-react";
 
-const Video = () => {
+import { NavUser } from "@/components/nav-user";
+import { Label } from "@/components/ui/label";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
+import { useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+
+// import React from "../../public/next.svg";
+
+// This is sample data
+const data = {
+  user: {
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "",
+  },
+  navMain: [
+    {
+      title: "Upload",
+      url: "#",
+      icon: Inbox,
+      isActive: true,
+    },
+    {
+      title: "Player Control",
+      url: "#",
+      icon: File,
+      isActive: false,
+    },
+    {
+      title: "Crop",
+      url: "#",
+      icon: Send,
+      isActive: false,
+    },
+    {
+      title: "Subtitle",
+      url: "#",
+      icon: Command,
+      isActive: false,
+    },
+  ],
+};
+
+export default function Video() {
+  const [activeItem, setActiveItem] = useState(data.navMain[0]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cropWidth, setCropWidth] = useState(0);
+  const [cropHeight, setCropHeight] = useState(0);
+  const [cropX, setCropX] = useState(0);
+  const [cropY, setCropY] = useState(0);
   const ffmpegRef = useRef(new FFmpeg());
   const [isFFmpegLoaded, setIsFFmpegLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const messageRef = useRef<HTMLParagraphElement | null>(null);
-  const [gifUrl, setGifUrl] = useState<string>("");
+  const [originalWidth, setOriginalWidth] = useState(0);
+  const [originalHeight, setOriginalHeight] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [subtitles, setSubtitles] = useState<
+    { text: string; timestamp: [number, number | null] }[]
+  >([]);
+
+  console.log("subtitles", subtitles);
+
+  const aspectRatios = [
+    { name: "Original", value: originalWidth / originalHeight },
+    { name: "1:1", value: 1 },
+    { name: "9:16", value: 9 / 16 },
+    { name: "16:9", value: 16 / 9 },
+    { name: "4:3", value: 4 / 3 },
+    { name: "3:4", value: 3 / 4 },
+  ];
+
+  const calculateCropDimensions = (aspectRatio: number) => {
+    if (!originalWidth || !originalHeight) return;
+
+    const currentRatio = originalWidth / originalHeight;
+    let newWidth = originalWidth;
+    let newHeight = originalHeight;
+
+    if (aspectRatio > currentRatio) {
+      newHeight = originalWidth / aspectRatio;
+    } else {
+      newWidth = originalHeight * aspectRatio;
+    }
+
+    setCropWidth(Math.floor(newWidth));
+    setCropHeight(Math.floor(newHeight));
+    setCropX(Math.floor((originalWidth - newWidth) / 2));
+    setCropY(Math.floor((originalHeight - newHeight) / 2));
+  };
 
   useEffect(() => {
     const loadFFmpeg = async () => {
@@ -33,72 +155,377 @@ const Video = () => {
     loadFFmpeg();
   }, []);
 
-  console.log("isFFmpegLoaded: ", isFFmpegLoaded);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) {
+      setVideoFile(file);
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+      setSubtitles([]);
+    }
+  };
 
+  const handleTimeUpdate = () => {
     if (videoRef.current) {
-      videoRef.current.src = URL.createObjectURL(file);
+      setCurrentTime(videoRef.current.currentTime);
     }
   };
 
-  const convertToGif = async () => {
-    if (!videoRef.current?.src) return console.error("No video source");
-
-    const ffmpeg = ffmpegRef.current;
-    try {
-      // Write the video file to FFmpeg's virtual file system
-      await ffmpeg.writeFile(
-        "input.mp4",
-        await fetchFile(videoRef.current.src)
-      );
-
-      // Run FFmpeg command to convert video to GIF
-      await ffmpeg.exec([
-        "-i",
-        "input.mp4",
-        "-vf",
-        "fps=10,scale=320:-1:flags=lanczos",
-        "output.gif",
-      ]);
-
-      // Read the resulting GIF file
-      const data = await ffmpeg.readFile("output.gif");
-      const gifBlob = new Blob([data], { type: "image/gif" });
-      const gifUrl = URL.createObjectURL(gifBlob);
-      setGifUrl(gifUrl);
-    } catch (error) {
-      console.error("Error converting to GIF:", error);
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+      const vWidth = videoRef.current.videoWidth;
+      const vHeight = videoRef.current.videoHeight;
+      setOriginalWidth(vWidth);
+      setOriginalHeight(vHeight);
+      setCropWidth(vWidth);
+      setCropHeight(vHeight);
     }
   };
 
-  return (
-    <div className="flex flex-col items-center gap-4 p-4">
-      <input
-        type="file"
-        accept="video/*"
-        onChange={handleFileChange}
-        className="mb-4"
-      />
-      <video ref={videoRef} controls className="max-w-md" />
-      <button
-        onClick={convertToGif}
-        disabled={!isFFmpegLoaded || !videoRef.current}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+  const handleSliderChange = (value: number[]) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = value[0];
+      setCurrentTime(value[0]);
+    }
+  };
+
+  const SideBarSetup = () => {
+    const { setOpen } = useSidebar();
+
+    return (
+      <Sidebar
+        collapsible="icon"
+        className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
       >
-        Convert to GIF
-      </button>
-      <p ref={messageRef} className="text-gray-600"></p>
-      {gifUrl && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Converted GIF:</h3>
-          <img src={gifUrl} alt="Converted GIF" className="max-w-md" />
-        </div>
-      )}
-    </div>
-  );
-};
+        {/* This is the first sidebar */}
+        {/* We disable collapsible and adjust width to icon. */}
+        {/* This will make the sidebar appear as icons. */}
+        <Sidebar
+          collapsible="none"
+          className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        >
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+                  <a href="#">
+                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                      <Command className="size-4" />
+                    </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">Local</span>
+                      <span className="truncate text-xs">Media</span>
+                    </div>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent className="px-1.5 md:px-0">
+                <SidebarMenu>
+                  {data.navMain.map(item => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        tooltip={{
+                          children: item.title,
+                          hidden: false,
+                        }}
+                        onClick={() => {
+                          setActiveItem(item);
+                          setOpen(true);
+                        }}
+                        isActive={activeItem?.title === item.title}
+                        className="px-2.5 md:px-2"
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <NavUser user={data.user} />
+          </SidebarFooter>
+        </Sidebar>
 
-export default Video;
+        {/* This is the second sidebar */}
+        {/* We disable collapsible and let it fill remaining space */}
+        <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+          <SidebarHeader className="gap-3.5 border-b p-4">
+            <div className="text-foreground text-base font-medium">
+              {activeItem?.title}
+            </div>
+            <SidebarInput placeholder="Type to search..." />
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup className="px-0">
+              <SidebarGroupContent>
+                <SecondarySidebar item={activeItem} />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+      </Sidebar>
+    );
+  };
+
+  const Upload = () => {
+    return (
+      <div>
+        <Input
+          type="file"
+          accept="video/*"
+          onChange={handleFileChange}
+          className="cursor-pointer"
+          disabled={isProcessing}
+        />
+      </div>
+    );
+  };
+
+  const PlayerControl = () => {
+    return (
+      <div>
+        <Button
+          onClick={() => videoRef.current?.play()}
+          disabled={!videoUrl || isProcessing}
+          className="w-full"
+        >
+          Play
+        </Button>
+        <Button
+          onClick={() => videoRef.current?.pause()}
+          disabled={!videoUrl || isProcessing}
+          className="w-full"
+        >
+          Pause
+        </Button>
+      </div>
+    );
+  };
+
+  const Crop = () => {
+    return !isFFmpegLoaded ? (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="animate-spin h-4 w-4" />
+        Loading FFmpeg...
+      </div>
+    ) : (
+      <div className="space-y-2">
+        <div className="space-y-2">
+          <Label>Aspect Ratio</Label>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {aspectRatios.map(ratio => (
+              <Button
+                key={ratio.name}
+                variant="outline"
+                size="sm"
+                onClick={() => calculateCropDimensions(ratio.value)}
+                className={ratio.name === "Original" ? "col-span-2" : ""}
+              >
+                {ratio.name}
+              </Button>
+            ))}
+          </div>
+          <div>
+            <label className="text-sm">Width:</label>
+            <Input
+              type="number"
+              value={cropWidth}
+              onChange={e => setCropWidth(Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-sm">Height:</label>
+            <Input
+              type="number"
+              value={cropHeight}
+              onChange={e => setCropHeight(Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-sm">X Position:</label>
+            <Input
+              type="number"
+              value={cropX}
+              onChange={e => setCropX(Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-sm">Y Position:</label>
+            <Input
+              type="number"
+              value={cropY}
+              onChange={e => setCropY(Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        <Button
+          onClick={async () => {
+            if (!videoFile) return;
+            setIsProcessing(true);
+            try {
+              const inputFileName = "input.mp4";
+              const outputFileName = "output.mp4";
+              const ffmpeg = ffmpegRef.current;
+              await ffmpeg.writeFile(inputFileName, await fetchFile(videoFile));
+              await ffmpeg.exec([
+                "-i",
+                inputFileName,
+                "-vf",
+                `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "22",
+                outputFileName,
+              ]);
+              const data = await ffmpeg.readFile(outputFileName);
+              const url = URL.createObjectURL(
+                new Blob([data], { type: "video/mp4" })
+              );
+              setVideoUrl(url);
+            } catch (error) {
+              console.error("Error processing video:", error);
+            } finally {
+              setIsProcessing(false);
+            }
+          }}
+          disabled={!videoFile || isProcessing}
+          className="w-full"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Process Video"
+          )}
+        </Button>
+      </div>
+    );
+  };
+
+  const SecondarySidebar = ({ item }: { item: any }) => {
+    switch (item?.title) {
+      case "Upload":
+        return <Upload />;
+      case "Player Control":
+        return <PlayerControl />;
+      case "Crop":
+        return <Crop />;
+      default:
+        return <Upload />;
+    }
+  };
+  return (
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "350px",
+        } as React.CSSProperties
+      }
+    >
+      <SideBarSetup />
+      <SidebarInset>
+        {/* breadcrumb */}
+        {/* <header className='sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4'>
+                    <SidebarTrigger className='-ml-1' />
+                    <Separator orientation='vertical' className='mr-2 h-4' />
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem className='hidden md:block'>
+                                <BreadcrumbLink href='#'>
+                                    All Inboxes
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className='hidden md:block' />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Inbox</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </header> */}
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          {/* Video Preview */}
+          <Card
+            className="w-full max-w-3xl aspect-video bg-black relative"
+            onClick={() => {
+              // setIsPlaying((prev) => !prev);
+              if (isPlaying) {
+                videoRef.current?.pause();
+              } else {
+                videoRef.current?.play();
+              }
+            }}
+          >
+            {videoUrl ? (
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  className={`w-full h-full cursor-pointer ${
+                    isPlaying ? "playing" : ""
+                  }`}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onClick={() => {
+                    isPlaying
+                      ? videoRef.current?.pause()
+                      : videoRef.current?.play();
+                  }}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                />
+                <div
+                  className="absolute border-2 border-white/50"
+                  style={{
+                    left: `${(cropX / originalWidth) * 100}%`,
+                    top: `${(cropY / originalHeight) * 100}%`,
+                    width: `${(cropWidth / originalWidth) * 100}%`,
+                    height: `${(cropHeight / originalHeight) * 100}%`,
+                  }}
+                />
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                Upload a video to preview
+              </div>
+            )}
+          </Card>
+
+          {/* Timeline */}
+          <div className="p-4 border-t">
+            <VideoTimeline
+              currentTime={currentTime}
+              duration={duration}
+              onTimeChange={handleSliderChange}
+              // @ts-ignore
+              videoRef={videoRef}
+              disabled={!videoUrl}
+            />
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
