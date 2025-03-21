@@ -1,7 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, SkipBack, SkipForward } from "lucide-react";
+import {
+  Minus,
+  PauseIcon,
+  PlayIcon,
+  Plus,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
 
 interface VideoTimelineProps {
   currentTime: number;
@@ -9,6 +16,7 @@ interface VideoTimelineProps {
   onTimeChange: (time: number[]) => void;
   videoRef: React.RefObject<HTMLVideoElement>;
   disabled?: boolean;
+  isPlaying?: boolean;
 }
 
 export function VideoTimeline({
@@ -17,6 +25,7 @@ export function VideoTimeline({
   onTimeChange,
   videoRef,
   disabled = false,
+  isPlaying = false,
 }: VideoTimelineProps) {
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -126,6 +135,20 @@ export function VideoTimeline({
             disabled={disabled || zoom >= 10}
           >
             <Plus className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              isPlaying ? videoRef.current?.pause() : videoRef.current?.play();
+            }}
+            disabled={disabled || zoom >= 10}
+          >
+            {isPlaying ? (
+              <PauseIcon className="h-4 w-4" />
+            ) : (
+              <PlayIcon className="h-4 w-4" />
+            )}
           </Button>
         </div>
         <div className="flex items-center gap-2">

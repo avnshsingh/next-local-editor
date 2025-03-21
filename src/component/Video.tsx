@@ -419,6 +419,102 @@ export default function Video() {
     );
   };
 
+  const SubtitleComp = () => {
+    const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
+    const [editingSubtitle, setEditingSubtitle] = useState<number | null>(null);
+    const [editingText, setEditingText] = useState<string>("");
+
+    const handleSubtitleUpload = async (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setSubtitleFile(file);
+
+      const text = await file.text();
+      const parsedSubtitles = text
+        .split("\n\n")
+        .filter(block => block.trim())
+        .map(block => {
+          const [id, time, ...textLines] = block.split("\n");
+          const [start, end] = time.split(" --> ").map(timeStr => {
+            const [h, m, s] = timeStr.split(":");
+            return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+          });
+          return {
+            text: textLines.join("\n"),
+            timestamp: [start, end] as [number, number],
+          };
+        });
+      setSubtitles(parsedSubtitles);
+    };
+
+    const handleSubtitleEdit = (index: number, newText: string) => {
+      setEditingText(newText);
+    };
+
+    const finishEditing = () => {
+      if (editingSubtitle !== null) {
+        setSubtitles(prev =>
+          prev.map((sub, i) =>
+            i === editingSubtitle ? { ...sub, text: editingText } : sub
+          )
+        );
+        setEditingSubtitle(null);
+        setEditingText("");
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <Input
+          type="file"
+          accept=".srt"
+          onChange={handleSubtitleUpload}
+          className="cursor-pointer"
+        />
+        <div className="space-y-2">
+          {subtitles.map((subtitle, index) => (
+            <div key={index} className="flex flex-col items-start gap-2">
+              <div className="text-sm text-muted-foreground px-2">
+                {formatTime(subtitle.timestamp[0])} →{" "}
+                {formatTime(subtitle.timestamp[1])}
+              </div>
+              {editingSubtitle === index ? (
+                <Input
+                  value={editingText}
+                  onChange={e => handleSubtitleEdit(index, e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === "Escape") {
+                      finishEditing();
+                    }
+                  }}
+                  onBlur={finishEditing}
+                  autoFocus
+                />
+              ) : (
+                <div
+                  className="flex-1 cursor-pointer p-2 hover:bg-muted/50 rounded"
+                  onClick={() => {
+                    setEditingSubtitle(index);
+                    setEditingText(subtitle.text);
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = subtitle.timestamp[1];
+                      setCurrentTime(subtitle.timestamp[1]);
+                      isPlaying && videoRef.current.pause();
+                    }
+                  }}
+                >
+                  {subtitle.text}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const SecondarySidebar = ({ item }: { item: any }) => {
     switch (item?.title) {
       case "Upload":
@@ -427,6 +523,8 @@ export default function Video() {
         return <PlayerControl />;
       case "Crop":
         return <Crop />;
+      case "Subtitle":
+        return <SubtitleComp />;
       default:
         return <Upload />;
     }
@@ -461,17 +559,7 @@ export default function Video() {
                 </header> */}
         <div className="flex flex-1 flex-col gap-4 p-4">
           {/* Video Preview */}
-          <Card
-            className="w-full max-w-3xl aspect-video bg-black relative"
-            onClick={() => {
-              // setIsPlaying((prev) => !prev);
-              if (isPlaying) {
-                videoRef.current?.pause();
-              } else {
-                videoRef.current?.play();
-              }
-            }}
-          >
+          <Card className="w-full max-w-3xl aspect-video bg-black relative">
             {videoUrl ? (
               <>
                 <video
@@ -480,16 +568,31 @@ export default function Video() {
                   className={`w-full h-full cursor-pointer ${
                     isPlaying ? "playing" : ""
                   }`}
-                  onTimeUpdate={handleTimeUpdate}
-                  onLoadedMetadata={handleLoadedMetadata}
-                  onClick={() => {
-                    isPlaying
-                      ? videoRef.current?.pause()
-                      : videoRef.current?.play();
+                  onTimeUpdate={e => {
+                    handleTimeUpdate();
+                    const currentTime = e.currentTarget.currentTime;
+                    const currentSubtitle = subtitles.find(
+                      sub =>
+                        currentTime >= sub.timestamp[0] &&
+                        currentTime <= sub.timestamp[1]
+                    );
+                    if (currentSubtitle) {
+                      e.currentTarget.title = currentSubtitle.text;
+                    }
                   }}
+                  onLoadedMetadata={handleLoadedMetadata}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                 />
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-center text-white text-lg font-semibold bg-black/50">
+                  {
+                    subtitles.find(
+                      sub =>
+                        currentTime >= sub.timestamp[0] &&
+                        currentTime <= sub.timestamp[1]
+                    )?.text
+                  }
+                </div>
                 <div
                   className="absolute border-2 border-white/50"
                   style={{
@@ -516,6 +619,7 @@ export default function Video() {
               // @ts-ignore
               videoRef={videoRef}
               disabled={!videoUrl}
+              isPlaying={isPlaying}
             />
           </div>
         </div>
