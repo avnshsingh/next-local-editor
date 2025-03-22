@@ -2,10 +2,16 @@
 import { AudioManager } from "@/components/AudioManager";
 import Transcript from "@/components/Transcript";
 import { useTranscriber } from "@/hooks/useTranscriber";
+import { useTheme } from "next-themes";
+import { useEffect } from "react";
 
 function TranscriberSTT() {
   const transcriber = useTranscriber();
+  const { setTheme } = useTheme();
 
+  useEffect(() => {
+    setTheme("light");
+  }, []);
   return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="container flex flex-col justify-center items-center">
