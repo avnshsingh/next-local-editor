@@ -15,8 +15,8 @@ export default function Page() {
         {/* <Home /> */}
         {/* <Transcript /> */}
         {/* <ModelManager /> */}
-        <Video />
         <h1>Home Page</h1>
+        <Video />
         {/* <TranscriberSTT /> */}
       </NoSSRWrapper>
     </div>

@@ -1,24 +1,9 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { Loader2 } from "lucide-react";
 import { VideoTimeline } from "@/components/VideoTimeline";
-import { formatAudioTimestamp } from "@/lib/AudioUtils";
-import { ArchiveX, Command, File, Inbox, Send, Trash2 } from "lucide-react";
+import { Command, File, Inbox, Send, Trash2 } from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import { Label } from "@/components/ui/label";
@@ -35,16 +20,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Switch } from "@/components/ui/switch";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import ThemeToggle from "@/components/ThemeToggle";
 
-// import React from "../../public/next.svg";
-
-// This is sample data
 const data = {
   user: {
     name: "shadcn",
@@ -250,6 +231,7 @@ export default function Video() {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
+            <ThemeToggle />
             <NavUser user={data.user} />
           </SidebarFooter>
         </Sidebar>
@@ -306,6 +288,7 @@ export default function Video() {
         >
           Pause
         </Button>
+        <ThemeToggle />
       </div>
     );
   };
