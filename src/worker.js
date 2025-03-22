@@ -134,7 +134,7 @@ const transcribe = async (
     // Update tokens of last chunk
     last.tokens = [...item[0].output_token_ids];
 
-    // Merge text chunks
+    // Merge text chunks with word-level timestamps
     // TODO optimise so we don't have to decode all chunks every time
     let data = transcriber.tokenizer._decode_asr(chunks_to_process, {
       time_precision: time_precision,
@@ -168,8 +168,9 @@ const transcribe = async (
     language: language,
     task: subtask,
 
-    // Return timestamps
     return_timestamps: true,
+    // Return timestamps at word level
+    // return_timestamps: "word",
     force_full_sequences: false,
 
     // Callback functions
