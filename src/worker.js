@@ -156,8 +156,13 @@ const transcribe = async (
     do_sample: false,
 
     // Sliding window
-    chunk_length_s: isDistilWhisper ? 20 : 30,
-    stride_length_s: isDistilWhisper ? 3 : 5,
+    // defaults
+    // chunk_length_s: isDistilWhisper ? 20 : 30,
+    // stride_length_s: isDistilWhisper ? 3 : 5,
+
+    // Custom
+    chunk_length_s: isDistilWhisper ? 15 : 20, // Reduced from 20/30
+    stride_length_s: isDistilWhisper ? 2 : 3, // Reduced proportionally
 
     // Language and task
     language: language,
