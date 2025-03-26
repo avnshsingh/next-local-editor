@@ -1,12 +1,12 @@
 "use client";
 
-import Video from "@/component/Video";
+import Video from "@/comp-pages/Video";
 import NoSSRWrapper from "./NoSSRWrapper";
-import Transcript from "@/component/Transcript";
+import Transcript from "@/comp-pages/Transcript";
 import { Button } from "@/components/ui/button";
 
-import ModelManager from "@/component/ModelManager";
-import TranscriberSTT from "@/component/TranscriberSTT";
+import ModelManager from "@/comp-pages/ModelManager";
+import TranscriberSTT from "@/comp-pages/TranscriberSTT";
 
 export default function Page() {
   return (
@@ -15,7 +15,7 @@ export default function Page() {
         {/* <Home /> */}
         {/* <Transcript /> */}
         {/* <ModelManager /> */}
-        <h1>Home Page</h1>
+        {/* <h1>Home Page</h1> */}
         <Video />
         {/* <TranscriberSTT /> */}
       </NoSSRWrapper>

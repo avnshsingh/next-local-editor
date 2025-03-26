@@ -1,6 +1,6 @@
 "use client";
 import NoSSRWrapper from "@/app/NoSSRWrapper";
-import TranscriberSTT from "@/component/TranscriberSTT";
+import TranscriberSTT from "@/comp-pages/TranscriberSTT";
 import React from "react";
 
 const TranscriberClient = () => {
