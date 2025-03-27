@@ -4,7 +4,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { useRef, useState } from "react";
 
-export default function Home() {
+export default function HomeTestForFFMPEG() {
   const [loaded, setLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const ffmpegRef = useRef(new FFmpeg());
