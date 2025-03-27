@@ -83,15 +83,15 @@ export default function Transcript({ transcribedData }: Props) {
   return (
     <div
       ref={divRef}
-      className="w-full flex flex-col my-2 p-4 max-h-[20rem] overflow-y-auto"
+      className="w-full flex flex-col my-2 p-4 max-h-[20rem] overflow-y-auto dark:bg-gray-900"
     >
       {transcribedData?.chunks &&
         transcribedData.chunks.map((chunk, i) => (
           <div
             key={`${i}-${chunk.text}`}
-            className="w-full flex flex-row mb-2 bg-white rounded-lg p-4 shadow-xl shadow-black/5 ring-1 ring-slate-700/10"
+            className="w-full flex flex-row mb-2 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl shadow-black/5 ring-1 ring-slate-700/10 dark:ring-slate-300/10 dark:text-gray-200"
           >
-            <div className="mr-5">
+            <div className="mr-5 dark:text-gray-400">
               {formatAudioTimestamp(chunk.timestamp[0])}
             </div>
             {chunk.text}
