@@ -461,7 +461,7 @@ export default function Video() {
             <div key={index} className="flex flex-col items-start gap-2">
               <div className="text-sm text-muted-foreground px-2">
                 {formatTime(subtitle.timestamp[0])} →{" "}
-                {formatTime(subtitle.timestamp[1])}
+                {formatTime(subtitle.timestamp[1]!)}
               </div>
               {editingSubtitle === index ? (
                 <Input
@@ -482,8 +482,8 @@ export default function Video() {
                     setEditingSubtitle(index);
                     setEditingText(subtitle.text);
                     if (videoRef.current) {
-                      videoRef.current.currentTime = subtitle.timestamp[1];
-                      setCurrentTime(subtitle.timestamp[1]);
+                      videoRef.current.currentTime = subtitle.timestamp[1]!;
+                      setCurrentTime(subtitle.timestamp[1]!);
                       isPlaying && videoRef.current.pause();
                     }
                   }}
@@ -557,7 +557,7 @@ export default function Video() {
                     const currentSubtitle = subtitles.find(
                       sub =>
                         currentTime >= sub.timestamp[0] &&
-                        currentTime <= sub.timestamp[1]
+                        currentTime <= sub.timestamp[1]!
                     );
                     if (currentSubtitle) {
                       e.currentTarget.title = currentSubtitle.text;
@@ -572,7 +572,7 @@ export default function Video() {
                     subtitles.find(
                       sub =>
                         currentTime >= sub.timestamp[0] &&
-                        currentTime <= sub.timestamp[1]
+                        currentTime <= sub.timestamp[1]!
                     )?.text
                   }
                 </div>
