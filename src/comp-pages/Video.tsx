@@ -621,6 +621,83 @@ export default function Video() {
       </div>
     );
   };
+  const SubtitleCompTimeline = () => {
+    const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
+    const [editingSubtitle, setEditingSubtitle] = useState<number | null>(null);
+    const [editingText, setEditingText] = useState<string>("");
+
+    const handleSubtitleEdit = (index: number, newText: string) => {
+      setEditingText(newText);
+    };
+
+    const finishEditing = () => {
+      if (editingSubtitle !== null) {
+        setSubtitles(prev =>
+          prev.map((sub, i) =>
+            i === editingSubtitle
+              ? {
+                  ...sub,
+                  text: editingText,
+                  words: [
+                    {
+                      text: editingText,
+                      start: sub.timestamp[0],
+                      end: sub.timestamp[1] || sub.timestamp[0],
+                    },
+                  ],
+                }
+              : sub
+          )
+        );
+        setEditingSubtitle(null);
+        setEditingText("");
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-x-5">
+          {subtitles.map((subtitle, index) => (
+            <div key={index} className="flex gap-2 flex-wrap">
+              {editingSubtitle === index ? (
+                <Input
+                  value={editingText}
+                  onChange={e => handleSubtitleEdit(index, e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === "Escape") {
+                      finishEditing();
+                    }
+                  }}
+                  onBlur={finishEditing}
+                  autoFocus
+                />
+              ) : (
+                <div
+                  className={`cursor-pointer p-2 rounded ${
+                    currentTime >= subtitle.timestamp[0] &&
+                    currentTime <= subtitle.timestamp[1]!
+                      ? "bg-amber-100/50 text-white"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => {
+                    setEditingSubtitle(index);
+                    setEditingText(subtitle.text);
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = subtitle.timestamp[1]!;
+                      setCurrentTime(subtitle.timestamp[1]!);
+                      isPlaying && videoRef.current.pause();
+                    }
+                  }}
+                >
+                  {subtitle.text}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   const SecondarySidebar = ({
     item,
@@ -756,6 +833,7 @@ export default function Video() {
               isPlaying={isPlaying}
             />
           </div>
+          <SubtitleCompTimeline />
         </div>
       </SidebarInset>
     </SidebarProvider>
