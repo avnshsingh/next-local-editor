@@ -23,10 +23,10 @@ export function MainNav() {
   const pathname = usePathname();
 
   const navItems: navItem[] = [
-    { href: "/", label: "Home" },
-    { href: "/about", label: "About Us" },
-    { href: "/blog", label: "Blog" },
-    { href: "/disclaimer", label: "Disclaimer" },
+    // { href: "/", label: "Home" },
+    // { href: "/about", label: "About Us" },
+    // { href: "/blog", label: "Blog" },
+    // { href: "/disclaimer", label: "Disclaimer" },
     { href: "/video-editor", label: "Video Editor" },
     { href: "/transcribe", label: "Transcribe" },
   ];

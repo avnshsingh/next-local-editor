@@ -1,7 +1,11 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
-import { Loader2 } from "lucide-react";
+import { Captions, FileIcon, Film, Loader2 } from "lucide-react";
 import { VideoTimeline } from "@/components/VideoTimeline";
 import { Command, File, Inbox, Send, Trash2 } from "lucide-react";
 
@@ -25,6 +29,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
+import { Separator } from "@/components/ui/separator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const data = {
   user: {
@@ -92,7 +98,11 @@ export default function Video() {
     position: "bottom", // can be 'top', 'bottom'
   });
 
-  console.log("subtitles", subtitles);
+  const isMobile = useIsMobile();
+
+  console.log("isMobile", isMobile);
+
+  // console.log("subtitles", subtitles);
 
   const aspectRatios = [
     { name: "Original", value: originalWidth / originalHeight },
@@ -248,24 +258,23 @@ export default function Video() {
 
         {/* This is the second sidebar */}
         {/* We disable collapsible and let it fill remaining space */}
-        <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-          <SidebarHeader className="gap-3.5 border-b p-4">
-            <div className="text-foreground text-base font-medium">
-              {activeItem?.title}
-            </div>
-            <SidebarInput placeholder="Type to search..." />
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup className="px-0">
-              <SidebarGroupContent>
-                <SecondarySidebar
-                  item={activeItem}
-                  subtitleStyle={subtitleStyle}
-                />
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        {!isMobile && (
+          <Sidebar collapsible="none" className="hidden flex-1 md:flex mt-2">
+            <SidebarHeader className="gap-3.5 border-b p-4">
+              <div className="text-foreground text-base font-medium">
+                {activeItem?.title}
+              </div>
+              <SidebarInput placeholder="Type to search..." />
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup className="px-0">
+                <SidebarGroupContent>
+                  <SecondarySidebar item={activeItem} />
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+        )}
       </Sidebar>
     );
   };
@@ -273,13 +282,27 @@ export default function Video() {
   const Upload = () => {
     return (
       <div>
-        <Input
-          type="file"
-          accept="video/*"
-          onChange={handleFileChange}
-          className="cursor-pointer"
-          disabled={isProcessing}
-        />
+        <div className="flex flex-col items-center justify-center w-full">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-background hover:bg-accent/50 transition-colors">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Film size={30} strokeWidth={1.5} className="m-2" />
+              <p className="mb-2 text-sm text-muted-foreground">
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop
+              </p>
+              <p className="text-xs text-muted-foreground">
+                MP4, WEBM or MOV (MAX. 1GB)
+              </p>
+            </div>
+            <Input
+              type="file"
+              accept="video/*"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={isProcessing}
+            />
+          </label>
+        </div>
       </div>
     );
   };
@@ -497,12 +520,25 @@ export default function Video() {
 
     return (
       <div className="space-y-4">
-        <Input
-          type="file"
-          accept=".srt"
-          onChange={handleSubtitleUpload}
-          className="cursor-pointer"
-        />
+        <div className="flex flex-col items-center justify-center w-full">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-background hover:bg-accent/50 transition-colors">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Captions size={30} strokeWidth={1.5} className="m-2" />
+              <p className="mb-2 text-sm text-muted-foreground">
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop
+              </p>
+              <p className="text-xs text-muted-foreground">subtile .SRT File</p>
+            </div>
+            <Input
+              type="file"
+              accept=".srt"
+              onChange={handleSubtitleUpload}
+              className="hidden"
+            />
+          </label>
+        </div>
+
         <div className="space-y-4 border-t pt-4">
           <h3 className="font-medium">Subtitle Style</h3>
           <div className="space-y-2">
@@ -579,7 +615,8 @@ export default function Video() {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-5">
+        {/* hidden using css class temporarily, apply flex to make visible */}
+        <div className="hidden flex-wrap items-center gap-x-5">
           {subtitles.map((subtitle, index) => (
             <div key={index} className="flex gap-2 flex-wrap">
               {editingSubtitle === index ? (
@@ -699,13 +736,7 @@ export default function Video() {
     );
   };
 
-  const SecondarySidebar = ({
-    item,
-    subtitleStyle,
-  }: {
-    item: any;
-    subtitleStyle: any;
-  }) => {
+  const SecondarySidebar = ({ item }: { item: any }) => {
     switch (item?.title) {
       case "Upload":
         return <Upload />;
@@ -730,10 +761,10 @@ export default function Video() {
       <SideBarSetup />
       <SidebarInset>
         {/* breadcrumb */}
-        {/* <header className='sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4'>
-                    <SidebarTrigger className='-ml-1' />
-                    <Separator orientation='vertical' className='mr-2 h-4' />
-                    <Breadcrumb>
+        <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+          <SidebarTrigger className="ml-1" /> <h2>Menu Toggle</h2>
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          {/* <Breadcrumb>
                         <BreadcrumbList>
                             <BreadcrumbItem className='hidden md:block'>
                                 <BreadcrumbLink href='#'>
@@ -745,9 +776,22 @@ export default function Video() {
                                 <BreadcrumbPage>Inbox</BreadcrumbPage>
                             </BreadcrumbItem>
                         </BreadcrumbList>
-                    </Breadcrumb>
-                </header> */}
+                    </Breadcrumb> */}
+        </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
+          {isMobile && (
+            <>
+              <h1 className="text-2xl font-medium bg-background text-primary">
+                {activeItem.title}
+              </h1>
+              <Card className="w-full max-w-3xl aspect-video bg-background">
+                <SecondarySidebar item={activeItem} />
+              </Card>
+              <h1 className="text-2xl font-medium bg-background text-primary md:hidden">
+                Video Editor
+              </h1>
+            </>
+          )}
           {/* Video Preview */}
           <Card className="w-full max-w-3xl aspect-video bg-black relative">
             {videoUrl ? (
