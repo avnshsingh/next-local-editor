@@ -79,8 +79,18 @@ export default function Video() {
   const [originalHeight, setOriginalHeight] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [subtitles, setSubtitles] = useState<
-    { text: string; timestamp: [number, number | null] }[]
+    {
+      text: string;
+      timestamp: [number, number | null];
+      words?: { text: string; start: number; end: number }[];
+    }[]
   >([]);
+  const [subtitleStyle, setSubtitleStyle] = useState({
+    fontSize: 18,
+    color: "#ffffff",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    position: "bottom", // can be 'top', 'bottom'
+  });
 
   console.log("subtitles", subtitles);
 
@@ -248,7 +258,10 @@ export default function Video() {
           <SidebarContent>
             <SidebarGroup className="px-0">
               <SidebarGroupContent>
-                <SecondarySidebar item={activeItem} />
+                <SecondarySidebar
+                  item={activeItem}
+                  subtitleStyle={subtitleStyle}
+                />
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
@@ -406,6 +419,12 @@ export default function Video() {
     const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
     const [editingSubtitle, setEditingSubtitle] = useState<number | null>(null);
     const [editingText, setEditingText] = useState<string>("");
+    // const [subtitleStyle, setSubtitleStyle] = useState({
+    //   fontSize: 18,
+    //   color: "#ffffff",
+    //   backgroundColor: "rgba(0, 0, 0, 0.5)",
+    //   position: "bottom" as "top" | "bottom",
+    // });
 
     const handleSubtitleUpload = async (
       e: React.ChangeEvent<HTMLInputElement>
@@ -422,11 +441,27 @@ export default function Video() {
           const [id, time, ...textLines] = block.split("\n");
           const [start, end] = time.split(" --> ").map(timeStr => {
             const [h, m, s] = timeStr.split(":");
-            return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+            const [seconds, milliseconds] = s.split(",");
+            return (
+              parseInt(h) * 3600 +
+              parseInt(m) * 60 +
+              parseFloat(seconds) +
+              parseInt(milliseconds || "0") / 1000
+            );
           });
+          const words = textLines.join("\n").split(" ");
+          const wordCount = words.length;
+          const duration = end - start;
+          const wordDuration = duration / wordCount;
+
           return {
             text: textLines.join("\n"),
             timestamp: [start, end] as [number, number],
+            words: words.map((word, index) => ({
+              text: word,
+              start: start + index * wordDuration,
+              end: start + (index + 1) * wordDuration,
+            })),
           };
         });
       setSubtitles(parsedSubtitles);
@@ -440,7 +475,19 @@ export default function Video() {
       if (editingSubtitle !== null) {
         setSubtitles(prev =>
           prev.map((sub, i) =>
-            i === editingSubtitle ? { ...sub, text: editingText } : sub
+            i === editingSubtitle
+              ? {
+                  ...sub,
+                  text: editingText,
+                  words: [
+                    {
+                      text: editingText,
+                      start: sub.timestamp[0],
+                      end: sub.timestamp[1] || sub.timestamp[0],
+                    },
+                  ],
+                }
+              : sub
           )
         );
         setEditingSubtitle(null);
@@ -456,13 +503,85 @@ export default function Video() {
           onChange={handleSubtitleUpload}
           className="cursor-pointer"
         />
-        <div className="space-y-2">
-          {subtitles.map((subtitle, index) => (
-            <div key={index} className="flex flex-col items-start gap-2">
-              <div className="text-sm text-muted-foreground px-2">
-                {formatTime(subtitle.timestamp[0])} →{" "}
-                {formatTime(subtitle.timestamp[1]!)}
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="font-medium">Subtitle Style</h3>
+          <div className="space-y-2">
+            <div>
+              <Label>Font Size</Label>
+              <Input
+                type="number"
+                value={subtitleStyle.fontSize}
+                onChange={e =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    fontSize: Number(e.target.value),
+                  }))
+                }
+                min={12}
+                max={36}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Text Color</Label>
+              <Input
+                type="color"
+                value={subtitleStyle.color}
+                onChange={e =>
+                  setSubtitleStyle(prev => ({ ...prev, color: e.target.value }))
+                }
+                className="h-10 mt-1"
+              />
+            </div>
+            <div>
+              <Label>Background Opacity</Label>
+              <Input
+                type="range"
+                min={0}
+                max={100}
+                value={
+                  Number(subtitleStyle.backgroundColor.slice(14, -1)) * 100
+                }
+                onChange={e => {
+                  const opacity = Number(e.target.value) / 100;
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    backgroundColor: `rgba(0, 0, 0, ${opacity})`,
+                  }));
+                }}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Position</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  variant={
+                    subtitleStyle.position === "top" ? "default" : "outline"
+                  }
+                  onClick={() =>
+                    setSubtitleStyle(prev => ({ ...prev, position: "top" }))
+                  }
+                >
+                  Top
+                </Button>
+                <Button
+                  variant={
+                    subtitleStyle.position === "bottom" ? "default" : "outline"
+                  }
+                  onClick={() =>
+                    setSubtitleStyle(prev => ({ ...prev, position: "bottom" }))
+                  }
+                >
+                  Bottom
+                </Button>
               </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-5">
+          {subtitles.map((subtitle, index) => (
+            <div key={index} className="flex gap-2 flex-wrap">
               {editingSubtitle === index ? (
                 <Input
                   value={editingText}
@@ -477,7 +596,12 @@ export default function Video() {
                 />
               ) : (
                 <div
-                  className="flex-1 cursor-pointer p-2 hover:bg-muted/50 rounded"
+                  className={`cursor-pointer p-2 rounded ${
+                    currentTime >= subtitle.timestamp[0] &&
+                    currentTime <= subtitle.timestamp[1]!
+                      ? "bg-amber-100/50 text-white"
+                      : "hover:bg-muted/50"
+                  }`}
                   onClick={() => {
                     setEditingSubtitle(index);
                     setEditingText(subtitle.text);
@@ -498,7 +622,13 @@ export default function Video() {
     );
   };
 
-  const SecondarySidebar = ({ item }: { item: any }) => {
+  const SecondarySidebar = ({
+    item,
+    subtitleStyle,
+  }: {
+    item: any;
+    subtitleStyle: any;
+  }) => {
     switch (item?.title) {
       case "Upload":
         return <Upload />;
@@ -567,14 +697,35 @@ export default function Video() {
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                 />
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-center text-white text-lg font-semibold bg-black/50">
-                  {
-                    subtitles.find(
+                <div
+                  className="absolute bottom-0 left-0 right-0 p-4 text-center text-lg font-semibold"
+                  style={{
+                    color: subtitleStyle.color,
+                    fontSize: `${subtitleStyle.fontSize}px`,
+                    backgroundColor: subtitleStyle.backgroundColor,
+                    [subtitleStyle.position]: 0,
+                  }}
+                >
+                  {subtitles
+                    .find(
                       sub =>
                         currentTime >= sub.timestamp[0] &&
                         currentTime <= sub.timestamp[1]!
-                    )?.text
-                  }
+                    )
+                    ?.words?.map((word, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          opacity:
+                            currentTime >= word.start && currentTime <= word.end
+                              ? 1
+                              : 0.3,
+                          transition: "opacity 0.1s ease-in-out",
+                        }}
+                      >
+                        {word.text}{" "}
+                      </span>
+                    )) || ""}
                 </div>
                 <div
                   className="absolute border-2 border-white/50"

@@ -170,7 +170,7 @@ const transcribe = async (
 
     return_timestamps: true,
     // Return timestamps at word level
-    // return_timestamps: "word",
+    return_timestamps: "word",
     force_full_sequences: false,
 
     // Callback functions
