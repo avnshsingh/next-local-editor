@@ -31,6 +31,7 @@ import { Card } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DummySubtile } from "@/lib/DummyData";
 
 const data = {
   user: {
@@ -90,7 +91,7 @@ export default function Video() {
       timestamp: [number, number | null];
       words?: { text: string; start: number; end: number }[];
     }[]
-  >([]);
+  >(DummySubtile || []);
   const [subtitleStyle, setSubtitleStyle] = useState({
     fontSize: 18,
     color: "#ffffff",
@@ -101,6 +102,7 @@ export default function Video() {
   const isMobile = useIsMobile();
 
   console.log("isMobile", isMobile);
+  console.log("subtitles", subtitles);
 
   // console.log("subtitles", subtitles);
 
@@ -133,6 +135,13 @@ export default function Video() {
   };
 
   useEffect(() => {
+    // Restore from localStorage on mount
+    const savedVideoUrl = localStorage.getItem("videoUrl");
+
+    if (savedVideoUrl) {
+      setVideoUrl(savedVideoUrl);
+    }
+
     const loadFFmpeg = async () => {
       try {
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
@@ -163,6 +172,7 @@ export default function Video() {
       const url = URL.createObjectURL(file);
       setVideoUrl(url);
       setSubtitles([]);
+      localStorage.setItem("videoUrl", url);
     }
   };
 
