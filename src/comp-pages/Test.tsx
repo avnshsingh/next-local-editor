@@ -25,6 +25,7 @@ const Test = () => {
   const [fontFile, setFontFile] = React.useState<File | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#FFFFFF");
   const [outlineColor, setOutlineColor] = useState("#000000");
+  const [useAssFormat, setUseAssFormat] = useState(false);
 
   console.log("subtitles: ", subtitles);
 
@@ -123,16 +124,38 @@ const Test = () => {
       // Write video file to FFmpeg's virtual file system
       await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
 
-      // Create subtitles file in SRT format
-      let srtContent = "";
-      subtitles.forEach((sub, index) => {
-        srtContent += `${index + 1}\n`;
-        srtContent += `${formatTime(sub.start)} --> ${formatTime(sub.end)}\n`;
-        srtContent += `${sub.text}\n\n`;
-      });
+      // Create subtitles file in SRT or ASS format
+      let subtitleContent = "";
+      let subtitleFilename = "subs.srt";
 
-      await ffmpeg.writeFile("subs.srt", srtContent);
-      console.log("srtContent: ", srtContent);
+      // TikTok-style ASS format
+      if (useAssFormat) {
+        subtitleFilename = "subs.ass";
+        subtitleContent =
+          "[Script Info]\nScriptType: v4.00+\nPlayResX: 384\nPlayResY: 288\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Roboto Bold,36,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,0,2,10,10,70,0\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
+
+        subtitles.forEach((sub, index) => {
+          subtitleContent += `Dialogue: 0,${formatAssTime(
+            sub.start
+          )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
+        });
+      } else {
+        // Original SRT format
+        subtitles.forEach((sub, index) => {
+          subtitleContent += `${index + 1}\n`;
+          subtitleContent += `${formatTime(sub.start)} --> ${formatTime(
+            sub.end
+          )}\n`;
+          subtitleContent += `${sub.text}\n\n`;
+        });
+      }
+
+      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
+
+      console.log("subtitle in export: ", {
+        subtitleFilename,
+        subtitleContent,
+      });
 
       await ffmpeg.exec([
         "-i",
@@ -143,7 +166,8 @@ const Test = () => {
         "00:00:03", // till only 3 seconds
         "-vf",
         // prettier-ignore
-        `subtitles=subs.srt:fontsdir=/tmp:force_style='Fontname=Roboto Bold,FontSize=30,MarginV=70,PrimaryColour=${toFFmpegColor(primaryColor)},OutlineColour=${toFFmpegColor(outlineColor)}'`,
+        `subtitles=${subtitleFilename}:fontsdir=/tmp`,
+        // `subtitles=${subtitleFilename}:fontsdir=/tmp:force_style='Fontname=Roboto Bold,FontSize=30,MarginV=70,PrimaryColour=${toFFmpegColor(primaryColor)},OutlineColour=${toFFmpegColor(outlineColor)}'`,
         outputName,
       ]);
 
@@ -193,6 +217,17 @@ const Test = () => {
     return `${hours}:${minutes}:${seconds},${milliseconds}`;
   };
 
+  const formatAssTime = (ms: number) => {
+    const date = new Date(ms);
+    const hours = date.getUTCHours().toString().padStart(1, "0");
+    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
+    const seconds = date.getUTCSeconds().toString().padStart(2, "0");
+    const centiseconds = Math.floor(date.getUTCMilliseconds() / 10)
+      .toString()
+      .padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}.${centiseconds}`;
+  };
+
   return (
     <div>
       <input type="file" accept="video/*" onChange={handleFileChange} />
@@ -202,6 +237,21 @@ const Test = () => {
         accept=".ttf,.otf"
         onChange={e => setFontFile(e.target.files?.[0] || null)}
       />
+      <div className="flex items-center gap-2 mt-4">
+        <label className="block text-sm font-medium">Subtitle Format:</label>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="sr-only peer"
+            checked={useAssFormat}
+            onChange={() => setUseAssFormat(!useAssFormat)}
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <span className="ml-3 text-sm font-medium">
+            {useAssFormat ? "ASS (TikTok Style)" : "SRT"}
+          </span>
+        </label>
+      </div>
       <div className="flex gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -233,7 +283,8 @@ const Test = () => {
         disabled={!videoFile || !subtitles}
         className="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded mt-4"
       >
-        Export with Subtitles (480p 24fps)
+        Export with {useAssFormat ? "ASS (TikTok Style)" : "SRT"} Subtitles
+        (480p 24fps)
       </button>
     </div>
   );
