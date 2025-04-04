@@ -25,9 +25,34 @@ const Test = () => {
   const [fontFile, setFontFile] = React.useState<File | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#FFFFFF");
   const [outlineColor, setOutlineColor] = useState("#000000");
-  const [useAssFormat, setUseAssFormat] = useState(false);
+  const [backgroundColor, setBackgroundColor] = useState("#000000");
+  const [useAssFormat, setUseAssFormat] = useState(true);
+  const [fontSize, setFontSize] = useState(36);
+  const [marginV, setMarginV] = useState(70);
+  const [outlineWidth, setOutlineWidth] = useState(1);
+  const [currentSubtitle, setCurrentSubtitle] = useState("");
+  const [backgroundOpacity, setBackgroundOpacity] = useState(0.5);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   console.log("subtitles: ", subtitles);
+
+  useEffect(() => {
+    const updatePreview = () => {
+      if (videoRef.current && previewRef.current && subtitles) {
+        const time = videoRef.current.currentTime * 1000;
+        const currentSub = subtitles.find(
+          sub => time >= sub.start && time <= sub.end
+        );
+        setCurrentSubtitle(currentSub?.text || "");
+      }
+    };
+
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener("timeupdate", updatePreview);
+      return () => video.removeEventListener("timeupdate", updatePreview);
+    }
+  }, [subtitles]);
 
   useEffect(() => {
     const loadFFmpeg = async () => {
@@ -124,31 +149,19 @@ const Test = () => {
       // Write video file to FFmpeg's virtual file system
       await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
 
-      // Create subtitles file in SRT or ASS format
+      // Create subtitles file in ASS format
       let subtitleContent = "";
-      let subtitleFilename = "subs.srt";
+      const subtitleFilename = "subs.ass";
 
       // TikTok-style ASS format
-      if (useAssFormat) {
-        subtitleFilename = "subs.ass";
-        subtitleContent =
-          "[Script Info]\nScriptType: v4.00+\nPlayResX: 384\nPlayResY: 288\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Roboto Bold,36,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,0,2,10,10,70,0\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
+      subtitleContent =
+        "[Script Info]\nScriptType: v4.00+\nPlayResX: 384\nPlayResY: 288\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Roboto Bold,36,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,1,0,2,10,10,70,0\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
 
-        subtitles.forEach((sub, index) => {
-          subtitleContent += `Dialogue: 0,${formatAssTime(
-            sub.start
-          )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
-        });
-      } else {
-        // Original SRT format
-        subtitles.forEach((sub, index) => {
-          subtitleContent += `${index + 1}\n`;
-          subtitleContent += `${formatTime(sub.start)} --> ${formatTime(
-            sub.end
-          )}\n`;
-          subtitleContent += `${sub.text}\n\n`;
-        });
-      }
+      subtitles.forEach((sub, index) => {
+        subtitleContent += `Dialogue: 0,${formatAssTime(
+          sub.start
+        )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
+      });
 
       await ffmpeg.writeFile(subtitleFilename, subtitleContent);
 
@@ -166,8 +179,7 @@ const Test = () => {
         "00:00:03", // till only 3 seconds
         "-vf",
         // prettier-ignore
-        `subtitles=${subtitleFilename}:fontsdir=/tmp`,
-        // `subtitles=${subtitleFilename}:fontsdir=/tmp:force_style='Fontname=Roboto Bold,FontSize=30,MarginV=70,PrimaryColour=${toFFmpegColor(primaryColor)},OutlineColour=${toFFmpegColor(outlineColor)}'`,
+        `subtitles=${subtitleFilename}:fontsdir=/tmp:force_style='Fontname=Roboto Bold,FontSize=${fontSize},MarginV=${marginV},PrimaryColour=${toFFmpegColor(primaryColor)},OutlineColour=${toFFmpegColor(outlineColor)},BorderStyle=4,Outline=${outlineWidth},BackColour=${toFFmpegColor(backgroundColor)}80'`,
         outputName,
       ]);
 
@@ -237,46 +249,129 @@ const Test = () => {
         accept=".ttf,.otf"
         onChange={e => setFontFile(e.target.files?.[0] || null)}
       />
-      <div className="flex items-center gap-2 mt-4">
-        <label className="block text-sm font-medium">Subtitle Format:</label>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={useAssFormat}
-            onChange={() => setUseAssFormat(!useAssFormat)}
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          <span className="ml-3 text-sm font-medium">
-            {useAssFormat ? "ASS (TikTok Style)" : "SRT"}
-          </span>
-        </label>
-      </div>
-      <div className="flex gap-4 mt-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Primary Color
-          </label>
-          <input
-            type="color"
-            value={primaryColor}
-            onChange={e => setPrimaryColor(e.target.value)}
-            className="w-12 h-12"
-          />
+      <div className="flex flex-col gap-4 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Primary Color
+            </label>
+            <input
+              type="color"
+              value={primaryColor}
+              onChange={e => setPrimaryColor(e.target.value)}
+              className="w-12 h-12"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Outline Color
+            </label>
+            <input
+              type="color"
+              value={outlineColor}
+              onChange={e => setOutlineColor(e.target.value)}
+              className="w-12 h-12"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Background Color
+            </label>
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={e => setBackgroundColor(e.target.value)}
+              className="w-12 h-12"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Background Opacity
+            </label>
+            <input
+              type="range"
+              value={backgroundOpacity}
+              onChange={e => setBackgroundOpacity(Number(e.target.value))}
+              min="0"
+              max="1"
+              step="0.1"
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Font Size</label>
+            <input
+              type="number"
+              value={fontSize}
+              onChange={e => setFontSize(Number(e.target.value))}
+              min="12"
+              max="72"
+              className="w-20 px-2 py-1 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Vertical Margin
+            </label>
+            <input
+              type="number"
+              value={marginV}
+              onChange={e => setMarginV(Number(e.target.value))}
+              min="0"
+              max="200"
+              className="w-20 px-2 py-1 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Outline Width
+            </label>
+            <input
+              type="number"
+              value={outlineWidth}
+              onChange={e => setOutlineWidth(Number(e.target.value))}
+              min="0"
+              max="4"
+              step="0.1"
+              className="w-20 px-2 py-1 border rounded"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Outline Color
-          </label>
-          <input
-            type="color"
-            value={outlineColor}
-            onChange={e => setOutlineColor(e.target.value)}
-            className="w-12 h-12"
-          />
+      </div>
+      <div className="relative mt-4">
+        <video
+          ref={videoRef}
+          src={videoUrl || ""}
+          controls
+          className="w-full"
+        />
+        <div
+          ref={previewRef}
+          className="absolute bottom-0 left-0 right-0 p-4 text-center"
+          style={{
+            color: primaryColor,
+            textShadow: `${outlineWidth}px ${outlineWidth}px ${outlineWidth}px ${outlineColor}`,
+            fontSize: `${fontSize}px`,
+            marginBottom: `${marginV}px`,
+            fontFamily: '"Roboto Bold", sans-serif',
+            fontWeight: "bold",
+            WebkitTextStroke: `${outlineWidth}px ${outlineColor}`,
+            backgroundColor: `${backgroundColor}${Math.round(
+              backgroundOpacity * 255
+            )
+              .toString(16)
+              .padStart(2, "0")}`,
+            padding: "8px",
+            borderRadius: "4px",
+            display: "inline-block",
+            maxWidth: "80%",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          {currentSubtitle}
         </div>
       </div>
-      <video ref={videoRef} src={videoUrl || ""} controls />
       <p ref={messageRef}></p>
       <button
         onClick={exportVideoWithSubtitles}
