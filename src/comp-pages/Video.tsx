@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DummySubtile } from "@/lib/DummyData";
 
@@ -60,6 +61,12 @@ const data = {
     },
     {
       title: "Subtitle",
+      url: "#",
+      icon: Command,
+      isActive: false,
+    },
+    {
+      title: "SubtitleStyle",
       url: "#",
       icon: Command,
       isActive: false,
@@ -96,7 +103,23 @@ export default function Video() {
     fontSize: 18,
     color: "#ffffff",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    position: "bottom", // can be 'top', 'bottom'
+    position: "bottom",
+    fontFamily: "Open Sans",
+    fontVariant: "Regular 400",
+    strokeWidth: 0,
+    strokeColor: "#000000",
+    textAlign: "center",
+    animation: "none",
+    textTransform: "none",
+    positionOffset: 0,
+    lineHeight: 1.4,
+    maxWidth: 100,
+    activeWordBackground: false,
+    activeWordBackgroundColor: "#0000ff",
+    activeWordTextStyle: false,
+    activeWordTextColor: "#ffd700",
+    activeWordStrokeWidth: 3,
+    activeWordStrokeColor: "#ff0000",
   });
 
   const isMobile = useIsMobile();
@@ -135,13 +158,6 @@ export default function Video() {
   };
 
   useEffect(() => {
-    // Restore from localStorage on mount
-    const savedVideoUrl = localStorage.getItem("videoUrl");
-
-    if (savedVideoUrl) {
-      setVideoUrl(savedVideoUrl);
-    }
-
     const loadFFmpeg = async () => {
       try {
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
@@ -166,13 +182,16 @@ export default function Video() {
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
-      const url = URL.createObjectURL(file);
-      setVideoUrl(url);
-      setSubtitles([]);
-      localStorage.setItem("videoUrl", url);
+    try {
+      const file = e.target.files?.[0];
+      if (file) {
+        setVideoFile(file);
+        const url = URL.createObjectURL(file);
+        setVideoUrl(url);
+        // setSubtitles([]);
+      }
+    } catch (error) {
+      console.error("Error handling file change:", error);
     }
   };
 
@@ -448,16 +467,311 @@ export default function Video() {
     );
   };
 
+  const SubtitleStyle = () => {
+    return (
+      <div className="space-y-4 border-t pt-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium">Subtitle Style</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setSubtitleStyle({
+                fontSize: 18,
+                color: "#ffffff",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                position: "bottom",
+                fontFamily: "Open Sans",
+                fontVariant: "Regular 400",
+                strokeWidth: 0,
+                strokeColor: "#000000",
+                textAlign: "center",
+                animation: "none",
+                textTransform: "none",
+                positionOffset: 0,
+                lineHeight: 1.4,
+                maxWidth: 100,
+                activeWordBackground: false,
+                activeWordBackgroundColor: "#0000ff",
+                activeWordTextStyle: false,
+                activeWordTextColor: "#ffd700",
+                activeWordStrokeWidth: 3,
+                activeWordStrokeColor: "#ff0000",
+              })
+            }
+          >
+            Restore Defaults
+          </Button>
+        </div>
+        <div className="space-y-2">
+          <div>
+            <Label>Font Family</Label>
+            <select
+              className="w-full h-10 px-3 rounded-md border bg-background mt-1"
+              value={subtitleStyle.fontFamily || "Arial"}
+              onChange={e =>
+                setSubtitleStyle(prev => ({
+                  ...prev,
+                  fontFamily: e.target.value,
+                }))
+              }
+            >
+              <option value="Arial">Arial</option>
+              <option value="Comic Sans MS">Comic Sans MS</option>
+              <option value="Impact">Impact</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Times New Roman">Times New Roman</option>
+            </select>
+          </div>
+          <div>
+            <Label>Font Size</Label>
+            <Input
+              type="number"
+              value={subtitleStyle.fontSize}
+              onChange={e =>
+                setSubtitleStyle(prev => ({
+                  ...prev,
+                  fontSize: Number(e.target.value),
+                }))
+              }
+              min={12}
+              max={72}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Text Color</Label>
+            <Input
+              type="color"
+              value={subtitleStyle.color}
+              onChange={e =>
+                setSubtitleStyle(prev => ({ ...prev, color: e.target.value }))
+              }
+              className="h-10 mt-1"
+            />
+          </div>
+          <div>
+            <Label>Text Stroke</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={subtitleStyle.strokeWidth || 0}
+                onChange={e =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    strokeWidth: Number(e.target.value),
+                  }))
+                }
+                min={0}
+                max={10}
+                className="mt-1"
+                placeholder="Width"
+              />
+              <Input
+                type="color"
+                value={subtitleStyle.strokeColor || "#000000"}
+                onChange={e =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    strokeColor: e.target.value,
+                  }))
+                }
+                className="h-10 mt-1 w-20"
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Background Opacity</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Number(subtitleStyle.backgroundColor.slice(14, -1)) * 100}
+              onChange={e => {
+                const opacity = Number(e.target.value) / 100;
+                setSubtitleStyle(prev => ({
+                  ...prev,
+                  backgroundColor: `rgba(0, 0, 0, ${opacity})`,
+                }));
+              }}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Text Alignment</Label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              <Button
+                variant={
+                  subtitleStyle.textAlign === "left" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setSubtitleStyle(prev => ({ ...prev, textAlign: "left" }))
+                }
+              >
+                Left
+              </Button>
+              <Button
+                variant={
+                  subtitleStyle.textAlign === "center" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setSubtitleStyle(prev => ({ ...prev, textAlign: "center" }))
+                }
+              >
+                Center
+              </Button>
+              <Button
+                variant={
+                  subtitleStyle.textAlign === "right" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setSubtitleStyle(prev => ({ ...prev, textAlign: "right" }))
+                }
+              >
+                Right
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Label>Animation Effect</Label>
+            <select
+              className="w-full h-10 px-3 rounded-md border bg-background mt-1"
+              value={subtitleStyle.animation || "none"}
+              onChange={e =>
+                setSubtitleStyle(prev => ({
+                  ...prev,
+                  animation: e.target.value,
+                }))
+              }
+            >
+              <option value="none">None</option>
+              <option value="fade">Fade</option>
+              <option value="bounce">Bounce</option>
+              <option value="slide">Slide</option>
+              <option value="pop">Pop</option>
+            </select>
+          </div>
+          <div>
+            <Label>Position</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <Button
+                variant={
+                  subtitleStyle.position === "top" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setSubtitleStyle(prev => ({ ...prev, position: "top" }))
+                }
+              >
+                Top
+              </Button>
+              <Button
+                variant={
+                  subtitleStyle.position === "bottom" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setSubtitleStyle(prev => ({ ...prev, position: "bottom" }))
+                }
+              >
+                Bottom
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-4 border-t pt-4">
+          <h4 className="font-medium">Word-Level Customization</h4>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Active Word Background</Label>
+              <Switch
+                checked={subtitleStyle.activeWordBackground}
+                onCheckedChange={checked =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    activeWordBackground: checked,
+                  }))
+                }
+              />
+            </div>
+            {subtitleStyle.activeWordBackground && (
+              <Input
+                type="color"
+                value={subtitleStyle.activeWordBackgroundColor}
+                onChange={e =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    activeWordBackgroundColor: e.target.value,
+                  }))
+                }
+                className="h-10 mt-1"
+              />
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Active Word Text Style</Label>
+              <Switch
+                checked={subtitleStyle.activeWordTextStyle}
+                onCheckedChange={checked =>
+                  setSubtitleStyle(prev => ({
+                    ...prev,
+                    activeWordTextStyle: checked,
+                  }))
+                }
+              />
+            </div>
+            {subtitleStyle.activeWordTextStyle && (
+              <div className="space-y-2">
+                <Input
+                  type="color"
+                  value={subtitleStyle.activeWordTextColor}
+                  onChange={e =>
+                    setSubtitleStyle(prev => ({
+                      ...prev,
+                      activeWordTextColor: e.target.value,
+                    }))
+                  }
+                  className="h-10"
+                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={subtitleStyle.activeWordStrokeWidth}
+                    onChange={e =>
+                      setSubtitleStyle(prev => ({
+                        ...prev,
+                        activeWordStrokeWidth: Number(e.target.value),
+                      }))
+                    }
+                    min={0}
+                    max={10}
+                    placeholder="Stroke Width"
+                  />
+                  <Input
+                    type="color"
+                    value={subtitleStyle.activeWordStrokeColor}
+                    onChange={e =>
+                      setSubtitleStyle(prev => ({
+                        ...prev,
+                        activeWordStrokeColor: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-20"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const SubtitleComp = () => {
     const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
     const [editingSubtitle, setEditingSubtitle] = useState<number | null>(null);
     const [editingText, setEditingText] = useState<string>("");
-    // const [subtitleStyle, setSubtitleStyle] = useState({
-    //   fontSize: 18,
-    //   color: "#ffffff",
-    //   backgroundColor: "rgba(0, 0, 0, 0.5)",
-    //   position: "bottom" as "top" | "bottom",
-    // });
 
     const handleSubtitleUpload = async (
       e: React.ChangeEvent<HTMLInputElement>
@@ -547,83 +861,6 @@ export default function Video() {
               className="hidden"
             />
           </label>
-        </div>
-
-        <div className="space-y-4 border-t pt-4">
-          <h3 className="font-medium">Subtitle Style</h3>
-          <div className="space-y-2">
-            <div>
-              <Label>Font Size</Label>
-              <Input
-                type="number"
-                value={subtitleStyle.fontSize}
-                onChange={e =>
-                  setSubtitleStyle(prev => ({
-                    ...prev,
-                    fontSize: Number(e.target.value),
-                  }))
-                }
-                min={12}
-                max={36}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Text Color</Label>
-              <Input
-                type="color"
-                value={subtitleStyle.color}
-                onChange={e =>
-                  setSubtitleStyle(prev => ({ ...prev, color: e.target.value }))
-                }
-                className="h-10 mt-1"
-              />
-            </div>
-            <div>
-              <Label>Background Opacity</Label>
-              <Input
-                type="range"
-                min={0}
-                max={100}
-                value={
-                  Number(subtitleStyle.backgroundColor.slice(14, -1)) * 100
-                }
-                onChange={e => {
-                  const opacity = Number(e.target.value) / 100;
-                  setSubtitleStyle(prev => ({
-                    ...prev,
-                    backgroundColor: `rgba(0, 0, 0, ${opacity})`,
-                  }));
-                }}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Position</Label>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <Button
-                  variant={
-                    subtitleStyle.position === "top" ? "default" : "outline"
-                  }
-                  onClick={() =>
-                    setSubtitleStyle(prev => ({ ...prev, position: "top" }))
-                  }
-                >
-                  Top
-                </Button>
-                <Button
-                  variant={
-                    subtitleStyle.position === "bottom" ? "default" : "outline"
-                  }
-                  onClick={() =>
-                    setSubtitleStyle(prev => ({ ...prev, position: "bottom" }))
-                  }
-                >
-                  Bottom
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
         {/* hidden using css class temporarily, apply flex to make visible */}
         <div className="hidden flex-wrap items-center gap-x-5">
@@ -756,6 +993,8 @@ export default function Video() {
         return <Crop />;
       case "Subtitle":
         return <SubtitleComp />;
+      case "SubtitleStyle":
+        return <SubtitleStyle />;
       default:
         return <Upload />;
     }
@@ -829,21 +1068,72 @@ export default function Video() {
                   onPause={() => setIsPlaying(false)}
                 />
                 <div
-                  className="absolute bottom-0 left-0 right-0 p-4 text-center text-lg font-semibold"
+                  className={`absolute bottom-0 left-0 right-0 p-4 text-lg font-semibold ${
+                    subtitleStyle.animation === "fade"
+                      ? "animate-fade-in"
+                      : subtitleStyle.animation === "bounce"
+                      ? "animate-bounce"
+                      : subtitleStyle.animation === "slide"
+                      ? "animate-slide-up"
+                      : subtitleStyle.animation === "pop"
+                      ? "animate-pop"
+                      : ""
+                  }`}
                   style={{
                     color: subtitleStyle.color,
                     fontSize: `${subtitleStyle.fontSize}px`,
                     backgroundColor: subtitleStyle.backgroundColor,
                     [subtitleStyle.position]: 0,
+                    textAlign: subtitleStyle.textAlign,
+                    fontFamily: subtitleStyle.fontFamily,
+                    WebkitTextStroke: subtitleStyle.strokeWidth
+                      ? `${subtitleStyle.strokeWidth}px ${subtitleStyle.strokeColor}`
+                      : "none",
+                    textStroke: subtitleStyle.strokeWidth
+                      ? `${subtitleStyle.strokeWidth}px ${subtitleStyle.strokeColor}`
+                      : "none",
                   }}
                 >
-                  {subtitles
-                    .find(
+                  {(() => {
+                    const currentSubtitleIndex = subtitles.findIndex(
                       sub =>
                         currentTime >= sub.timestamp[0] &&
                         currentTime <= sub.timestamp[1]!
-                    )
-                    ?.words?.map((word, index) => (
+                    );
+                    if (currentSubtitleIndex === -1) return "";
+
+                    const currentSubtitle = subtitles[currentSubtitleIndex];
+                    const currentWordIndex =
+                      currentSubtitle.words?.findIndex(
+                        word =>
+                          currentTime >= word.start && currentTime <= word.end
+                      ) ?? -1;
+
+                    let wordsToShow = [];
+
+                    // Add current word
+                    if (currentWordIndex !== -1 && currentSubtitle.words) {
+                      wordsToShow.push(currentSubtitle.words[currentWordIndex]);
+                    }
+
+                    // Add next words from current subtitle
+                    if (currentWordIndex !== -1 && currentSubtitle.words) {
+                      const nextWords = currentSubtitle.words.slice(
+                        currentWordIndex + 1
+                      );
+                      wordsToShow.push(...nextWords);
+                    }
+
+                    // Add next words from next subtitle
+                    if (currentSubtitleIndex < subtitles.length - 1) {
+                      const nextSubtitle = subtitles[currentSubtitleIndex + 1];
+                      if (nextSubtitle.words) {
+                        const nextWords = nextSubtitle.words.slice(0);
+                        wordsToShow.push(...nextWords);
+                      }
+                    }
+
+                    return wordsToShow.map((word, index) => (
                       <span
                         key={index}
                         style={{
@@ -852,11 +1142,24 @@ export default function Video() {
                               ? 1
                               : 0.3,
                           transition: "opacity 0.1s ease-in-out",
+                          backgroundColor:
+                            currentTime >= word.start &&
+                            currentTime <= word.end &&
+                            subtitleStyle.activeWordBackground
+                              ? subtitleStyle.activeWordBackgroundColor
+                              : "transparent",
+                          color:
+                            currentTime >= word.start &&
+                            currentTime <= word.end &&
+                            subtitleStyle.activeWordTextStyle
+                              ? subtitleStyle.activeWordTextColor
+                              : subtitleStyle.color,
                         }}
                       >
                         {word.text}{" "}
                       </span>
-                    )) || ""}
+                    ));
+                  })()}
                 </div>
                 <div
                   className="absolute border-2 border-white/50"
