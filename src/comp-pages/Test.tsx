@@ -12,6 +12,12 @@ function toFFmpegColor(rgb) {
   return "&H" + bgr + "&";
 }
 
+// New function for FFmpeg drawtext filter color format
+function toDrawTextColor(rgb) {
+  // Convert hex color (#RRGGBB) to 0xRRGGBB format for FFmpeg drawtext filter
+  return rgb.replace("#", "0x");
+}
+
 // Predefined subtitle style presets
 const subtitleStyles = {
   tiktok: {
@@ -201,7 +207,7 @@ const Test = () => {
       console.error("Error handling file change:", error);
     }
   };
-  const exportVideoWithSubtitles = async () => {
+  const exportVideoWithSubtitlesOld = async () => {
     if (!videoFile || !subtitles) return;
 
     try {
@@ -290,6 +296,77 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         new Blob([data.buffer], { type: "video/mp4" })
       );
 
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "video_with_subtitles.mp4";
+      a.click();
+    } catch (error) {
+      console.error("Error exporting video:", error);
+      if (messageRef.current) {
+        messageRef.current.textContent =
+          "Error exporting video: " + error?.message;
+      }
+    }
+  };
+  const exportVideoWithSubtitles = async () => {
+    if (!videoFile || !subtitles) return;
+
+    try {
+      const ffmpeg = ffmpegRef.current;
+      const inputName = "input.mp4";
+      const outputName = "output.mp4";
+
+      // Write video file to FFmpeg's virtual file system
+      await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
+
+      // Helper: Convert milliseconds to seconds (as a number)
+      const msToSeconds = ms => ms / 1000;
+
+      // Helper: Escape special characters for FFmpeg drawtext filter
+      const escapeFFmpegText = text => {
+        return text
+          .replace(/\\/g, "\\\\") // escape backslashes
+          .replace(/:/g, "\\:") // escape colons
+          .replace(/'/g, "\\'"); // escape single quotes
+      };
+
+      // Build drawtext filter chain for each subtitle item.
+      // Using styling: fontsize 24, primary color (red text), background (blue with opacity),
+      // and centered at the bottom.
+      const drawtextFilters = subtitles
+        .map(sub => {
+          const startSec = msToSeconds(sub.start);
+          const endSec = msToSeconds(sub.end);
+          return `drawtext=fontfile=/tmp/roboto.ttf:text='${escapeFFmpegText(
+            sub.text
+          )}':fontsize=${fontSize}:fontcolor=${toDrawTextColor(
+            primaryColor
+          )}:box=1:boxcolor=${toDrawTextColor(
+            backgroundColor
+          )}@${backgroundOpacity}:boxborderw=${outlineWidth}:x=(w-text_w)/2:y=h-th-${marginV}:enable='between(t,${startSec},${endSec})'`;
+        })
+        .join(",");
+
+      console.log("Drawtext filters:", drawtextFilters);
+
+      // Execute FFmpeg command with drawtext filters to burn in the subtitles
+      await ffmpeg.exec([
+        "-i",
+        inputName,
+        "-to",
+        "00:00:03", // till only 3 seconds
+        "-vf",
+        drawtextFilters,
+        "-preset",
+        "ultrafast",
+        outputName,
+      ]);
+
+      // Read and download the output file
+      const data = await ffmpeg.readFile(outputName);
+      const url = URL.createObjectURL(
+        new Blob([data.buffer], { type: "video/mp4" })
+      );
       const a = document.createElement("a");
       a.href = url;
       a.download = "video_with_subtitles.mp4";
