@@ -29,6 +29,7 @@ export function MainNav() {
     // { href: "/disclaimer", label: "Disclaimer" },
     { href: "/video-editor", label: "Video Editor" },
     { href: "/transcribe", label: "Transcribe" },
+    { href: "/test", label: "Test" },
   ];
 
   return (

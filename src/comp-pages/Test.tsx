@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import roboto from "../fonts/Roboto-Regular.ttf";
 import robotoBold from "../fonts/Roboto-Bold.ttf";
 import { Button } from "@/components/ui/button";
+import { DummyAssSubtileKaroke } from "@/lib/DummyData";
 
 function toFFmpegColor(rgb) {
   const bgr = rgb.slice(5, 7) + rgb.slice(3, 5) + rgb.slice(1, 3);
@@ -32,72 +33,6 @@ const subtitleStyles = {
     borderStyle: 4, // 1=outline, 3=opaque box, 4=shadow
     shadow: 0,
     alignment: 2, // 2=bottom center
-    marginL: 10,
-    marginR: 10,
-  },
-  youtube: {
-    primaryColor: "#FFFFFF",
-    outlineColor: "#000000",
-    backgroundColor: "#000000",
-    backgroundOpacity: 0.7,
-    fontSize: 28,
-    marginV: 50,
-    outlineWidth: 1.5,
-    bold: 1,
-    italic: 0,
-    underline: 0,
-    strikeOut: 0,
-    scaleX: 100,
-    scaleY: 100,
-    spacing: 0,
-    angle: 0,
-    borderStyle: 1, // outline only
-    shadow: 2,
-    alignment: 2,
-    marginL: 20,
-    marginR: 20,
-  },
-  netflix: {
-    primaryColor: "#FFFFFF",
-    outlineColor: "#000000",
-    backgroundColor: "#000000",
-    backgroundOpacity: 0,
-    fontSize: 32,
-    marginV: 60,
-    outlineWidth: 0.5,
-    bold: 0,
-    italic: 0,
-    underline: 0,
-    strikeOut: 0,
-    scaleX: 100,
-    scaleY: 100,
-    spacing: 0,
-    angle: 0,
-    borderStyle: 1,
-    shadow: 1,
-    alignment: 2,
-    marginL: 15,
-    marginR: 15,
-  },
-  modern: {
-    primaryColor: "#FFFFFF",
-    outlineColor: "#333333",
-    backgroundColor: "#000000",
-    backgroundOpacity: 0.3,
-    fontSize: 40,
-    marginV: 80,
-    outlineWidth: 0.8,
-    bold: 1,
-    italic: 0,
-    underline: 0,
-    strikeOut: 0,
-    scaleX: 110,
-    scaleY: 110,
-    spacing: 1,
-    angle: 0,
-    borderStyle: 4,
-    shadow: 2,
-    alignment: 2,
     marginL: 10,
     marginR: 10,
   },
@@ -312,12 +247,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
       });
 
-      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
-
       console.log("subtitle in export: ", {
         subtitleFilename,
         subtitleContent,
       });
+      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
 
       // Use the ASS file directly without force_style since all styles are in the file
       await ffmpeg.exec([
@@ -460,9 +394,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="tiktok">TikTok Style</option>
-                  <option value="youtube">YouTube Style</option>
-                  <option value="netflix">Netflix Style</option>
-                  <option value="modern">Modern Style</option>
                 </select>
               </div>
 
