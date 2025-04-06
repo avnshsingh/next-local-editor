@@ -4,6 +4,7 @@ import { fetchFile } from "@ffmpeg/util";
 import React, { useEffect, useRef, useState } from "react";
 import roboto from "../fonts/Roboto-Regular.ttf";
 import robotoBold from "../fonts/Roboto-Bold.ttf";
+import { Button } from "@/components/ui/button";
 
 function toFFmpegColor(rgb) {
   const bgr = rgb.slice(5, 7) + rgb.slice(3, 5) + rgb.slice(1, 3);
@@ -160,6 +161,8 @@ const Test = () => {
   const previewRef = useRef<HTMLDivElement>(null);
 
   console.log("subtitles: ", subtitles);
+  console.log("videoUrl: ", videoUrl);
+  console.log("videoFile: ", videoFile);
 
   useEffect(() => {
     const updatePreview = () => {
@@ -413,399 +416,398 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   };
 
   return (
-    <div>
-      <div className="flex flex-col gap-4">
-        <div className="flex gap-4">
-          <input type="file" accept="video/*" onChange={handleFileChange} />
-          <input type="file" accept=".srt" onChange={handleSubtitleChange} />
-        </div>
-
-        <div className="bg-gray-100 p-4 rounded-lg">
-          <h2 className="text-lg font-semibold mb-4">
-            Subtitle Style Customization
-          </h2>
-
-          {/* Style Preset Selector */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              Style Preset
-            </label>
-            <select
-              value={selectedStyle}
-              onChange={e =>
-                applyStylePreset(e.target.value as keyof typeof subtitleStyles)
-              }
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="tiktok">TikTok Style</option>
-              <option value="youtube">YouTube Style</option>
-              <option value="netflix">Netflix Style</option>
-              <option value="modern">Modern Style</option>
-            </select>
-          </div>
-
-          {/* Basic Settings */}
-          <div className="mb-4">
-            <h3 className="text-md font-medium mb-2">Basic Settings</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Primary Color
-                </label>
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={e => setPrimaryColor(e.target.value)}
-                  className="w-12 h-12"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Outline Color
-                </label>
-                <input
-                  type="color"
-                  value={outlineColor}
-                  onChange={e => setOutlineColor(e.target.value)}
-                  className="w-12 h-12"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Background Color
-                </label>
-                <input
-                  type="color"
-                  value={backgroundColor}
-                  onChange={e => setBackgroundColor(e.target.value)}
-                  className="w-12 h-12"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Background Opacity
-                </label>
-                <input
-                  type="range"
-                  value={backgroundOpacity}
-                  onChange={e => setBackgroundOpacity(Number(e.target.value))}
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  className="w-full"
-                />
-                <span className="text-xs">
-                  {Math.round(backgroundOpacity * 100)}%
-                </span>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Font Size
-                </label>
-                <input
-                  type="number"
-                  value={fontSize}
-                  onChange={e => setFontSize(Number(e.target.value))}
-                  min="12"
-                  max="72"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Outline Width
-                </label>
-                <input
-                  type="number"
-                  value={outlineWidth}
-                  onChange={e => setOutlineWidth(Number(e.target.value))}
-                  min="0"
-                  max="4"
-                  step="0.1"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
+    <div className="container mx-auto min-h-screen p-4 max-w-[1600px]">
+      <div className="grid md:grid-cols-2 lg:grid-cols-[400px,1fr] gap-6 h-[90vh]">
+        {/* Left Column - Controls */}
+        <div className="flex flex-col gap-4 sticky top-4 overflow-y-auto">
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Video File</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={handleFileChange}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
-          </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Subtitle File (SRT)</label>
+              <input
+                type="file"
+                accept=".srt"
+                onChange={handleSubtitleChange}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
 
-          {/* Advanced Settings - Collapsible */}
-          <details className="mb-4">
-            <summary className="text-md font-medium mb-2 cursor-pointer">
-              Advanced Settings
-            </summary>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Text Alignment
+            <div className="bg-card p-6 rounded-lg border shadow-sm">
+              <h2 className="text-xl font-semibold mb-6">
+                Subtitle Style Customization
+              </h2>
+
+              {/* Style Preset Selector */}
+              <div className="mb-6">
+                <label className="text-sm font-medium mb-2 block">
+                  Style Preset
                 </label>
                 <select
-                  value={alignment}
-                  onChange={e => setAlignment(Number(e.target.value))}
-                  className="w-full px-2 py-1 border rounded"
+                  value={selectedStyle}
+                  onChange={e =>
+                    applyStylePreset(
+                      e.target.value as keyof typeof subtitleStyles
+                    )
+                  }
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <option value="1">Bottom Left</option>
-                  <option value="2">Bottom Center</option>
-                  <option value="3">Bottom Right</option>
-                  <option value="4">Middle Left</option>
-                  <option value="5">Middle Center</option>
-                  <option value="6">Middle Right</option>
-                  <option value="7">Top Left</option>
-                  <option value="8">Top Center</option>
-                  <option value="9">Top Right</option>
+                  <option value="tiktok">TikTok Style</option>
+                  <option value="youtube">YouTube Style</option>
+                  <option value="netflix">Netflix Style</option>
+                  <option value="modern">Modern Style</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Border Style
-                </label>
-                <select
-                  value={borderStyle}
-                  onChange={e => setBorderStyle(Number(e.target.value))}
-                  className="w-full px-2 py-1 border rounded"
-                >
-                  <option value="1">Outline</option>
-                  <option value="3">Opaque Box</option>
-                  <option value="4">Shadow</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Shadow Distance
-                </label>
-                <input
-                  type="number"
-                  value={shadow}
-                  onChange={e => setShadow(Number(e.target.value))}
-                  min="0"
-                  max="4"
-                  step="0.5"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Vertical Margin
-                </label>
-                <input
-                  type="number"
-                  value={marginV}
-                  onChange={e => setMarginV(Number(e.target.value))}
-                  min="0"
-                  max="200"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Left Margin
-                </label>
-                <input
-                  type="number"
-                  value={marginL}
-                  onChange={e => setMarginL(Number(e.target.value))}
-                  min="0"
-                  max="200"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Right Margin
-                </label>
-                <input
-                  type="number"
-                  value={marginR}
-                  onChange={e => setMarginR(Number(e.target.value))}
-                  min="0"
-                  max="200"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Text Formatting
-                </label>
-                <div className="flex gap-2">
-                  <label className="flex items-center">
+
+              {/* Basic Settings */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-4">Basic Settings</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Primary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={primaryColor}
+                        onChange={e => setPrimaryColor(e.target.value)}
+                        className="w-10 h-10 rounded border"
+                      />
+                      <input
+                        type="text"
+                        value={primaryColor}
+                        onChange={e => setPrimaryColor(e.target.value)}
+                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Outline Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={outlineColor}
+                        onChange={e => setOutlineColor(e.target.value)}
+                        className="w-10 h-10 rounded border"
+                      />
+                      <input
+                        type="text"
+                        value={outlineColor}
+                        onChange={e => setOutlineColor(e.target.value)}
+                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Background Color
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={e => setBackgroundColor(e.target.value)}
+                        className="w-10 h-10 rounded border"
+                      />
+                      <input
+                        type="text"
+                        value={backgroundColor}
+                        onChange={e => setBackgroundColor(e.target.value)}
+                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Background Opacity
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        value={backgroundOpacity}
+                        onChange={e =>
+                          setBackgroundOpacity(Number(e.target.value))
+                        }
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                      />
+                      <span className="text-sm font-medium w-12 text-right">
+                        {Math.round(backgroundOpacity * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Font Size</label>
                     <input
-                      type="checkbox"
-                      checked={bold === 1}
-                      onChange={e => setBold(e.target.checked ? 1 : 0)}
-                      className="mr-1"
+                      type="number"
+                      value={fontSize}
+                      onChange={e => setFontSize(Number(e.target.value))}
+                      min="12"
+                      max="72"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
-                    <span className="text-xs font-bold">B</span>
-                  </label>
-                  <label className="flex items-center">
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Outline Width</label>
                     <input
-                      type="checkbox"
-                      checked={italic === 1}
-                      onChange={e => setItalic(e.target.checked ? 1 : 0)}
-                      className="mr-1"
+                      type="number"
+                      value={outlineWidth}
+                      onChange={e => setOutlineWidth(Number(e.target.value))}
+                      min="0"
+                      max="4"
+                      step="0.1"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
-                    <span className="text-xs italic">I</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={underline === 1}
-                      onChange={e => setUnderline(e.target.checked ? 1 : 0)}
-                      className="mr-1"
-                    />
-                    <span className="text-xs underline">U</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={strikeOut === 1}
-                      onChange={e => setStrikeOut(e.target.checked ? 1 : 0)}
-                      className="mr-1"
-                    />
-                    <span className="text-xs line-through">S</span>
-                  </label>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Scale X (%)
-                </label>
-                <input
-                  type="number"
-                  value={scaleX}
-                  onChange={e => setScaleX(Number(e.target.value))}
-                  min="50"
-                  max="200"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Scale Y (%)
-                </label>
-                <input
-                  type="number"
-                  value={scaleY}
-                  onChange={e => setScaleY(Number(e.target.value))}
-                  min="50"
-                  max="200"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Letter Spacing
-                </label>
-                <input
-                  type="number"
-                  value={spacing}
-                  onChange={e => setSpacing(Number(e.target.value))}
-                  min="0"
-                  max="10"
-                  step="0.5"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Rotation Angle
-                </label>
-                <input
-                  type="number"
-                  value={angle}
-                  onChange={e => setAngle(Number(e.target.value))}
-                  min="0"
-                  max="360"
-                  className="w-20 px-2 py-1 border rounded"
-                />
-              </div>
-            </div>
-          </details>
-        </div>
 
-        {/* Video Preview with Subtitle Overlay */}
-        <div className="relative mt-4">
-          <video
-            ref={videoRef}
-            src={videoUrl || ""}
-            controls
-            className="w-full"
-          />
-          <div
-            ref={previewRef}
-            className="absolute p-4 text-center"
-            style={{
-              color: primaryColor,
-              textShadow:
-                borderStyle === 4
-                  ? `${outlineWidth}px ${outlineWidth}px ${shadow}px ${outlineColor}`
-                  : "none",
-              fontSize: `${fontSize}px`,
-              fontFamily: '"Roboto Bold", sans-serif',
-              fontWeight: bold === 1 ? "bold" : "normal",
-              fontStyle: italic === 1 ? "italic" : "normal",
-              textDecoration: `${underline === 1 ? "underline" : ""} ${
-                strikeOut === 1 ? "line-through" : ""
-              }`,
-              WebkitTextStroke:
-                borderStyle === 1
-                  ? `${outlineWidth}px ${outlineColor}`
-                  : "none",
-              backgroundColor:
-                borderStyle === 3
-                  ? `${backgroundColor}${Math.round(backgroundOpacity * 255)
-                      .toString(16)
-                      .padStart(2, "0")}`
-                  : "transparent",
-              padding: "8px",
-              borderRadius: "4px",
-              display: "inline-block",
-              maxWidth: "80%",
-              transform: `translateX(-50%) scale(${scaleX / 100}, ${
-                scaleY / 100
-              }) rotate(${angle}deg)`,
-              letterSpacing: `${spacing}px`,
-              // Position based on alignment
-              ...(alignment <= 3 ? { bottom: `${marginV}px` } : {}),
-              ...(alignment >= 7 ? { top: `${marginV}px` } : {}),
-              ...(alignment % 3 === 1
-                ? {
-                    left: `${marginL}px`,
-                    transform: `scale(${scaleX / 100}, ${
-                      scaleY / 100
-                    }) rotate(${angle}deg)`,
-                  }
-                : {}),
-              ...(alignment % 3 === 0
-                ? {
-                    right: `${marginR}px`,
-                    transform: `scale(${scaleX / 100}, ${
-                      scaleY / 100
-                    }) rotate(${angle}deg)`,
-                  }
-                : {}),
-              ...(alignment % 3 === 2 ? { left: "50%" } : {}),
-              ...(alignment >= 4 && alignment <= 6
-                ? {
-                    top: "50%",
-                    transform: `translate(-50%, -50%) scale(${scaleX / 100}, ${
-                      scaleY / 100
-                    }) rotate(${angle}deg)`,
-                  }
-                : {}),
-            }}
-          >
-            {currentSubtitle}
+              {/* Advanced Settings - Collapsible */}
+              <details className="mb-6 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="text-lg font-medium mb-4 cursor-pointer inline-flex items-center hover:text-primary">
+                  Advanced Settings
+                  <svg
+                    className="h-4 w-4 ml-2 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </summary>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-card rounded-lg border mt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Text Alignment
+                    </label>
+                    <select
+                      value={alignment}
+                      onChange={e => setAlignment(Number(e.target.value))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="1">Bottom Left</option>
+                      <option value="2">Bottom Center</option>
+                      <option value="3">Bottom Right</option>
+                      <option value="4">Middle Left</option>
+                      <option value="5">Middle Center</option>
+                      <option value="6">Middle Right</option>
+                      <option value="7">Top Left</option>
+                      <option value="8">Top Center</option>
+                      <option value="9">Top Right</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Border Style</label>
+                    <select
+                      value={borderStyle}
+                      onChange={e => setBorderStyle(Number(e.target.value))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="1">Outline</option>
+                      <option value="3">Opaque Box</option>
+                      <option value="4">Shadow</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Shadow Distance
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        value={shadow}
+                        onChange={e => setShadow(Number(e.target.value))}
+                        min="0"
+                        max="4"
+                        step="0.5"
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                      />
+                      <input
+                        type="number"
+                        value={shadow}
+                        onChange={e => setShadow(Number(e.target.value))}
+                        min="0"
+                        max="4"
+                        step="0.5"
+                        className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Vertical Margin
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        value={marginV}
+                        onChange={e => setMarginV(Number(e.target.value))}
+                        min="0"
+                        max="200"
+                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                      />
+                      <input
+                        type="number"
+                        value={marginV}
+                        onChange={e => setMarginV(Number(e.target.value))}
+                        min="0"
+                        max="200"
+                        className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Left Margin
+                    </label>
+                    <input
+                      type="number"
+                      value={marginL}
+                      onChange={e => setMarginL(Number(e.target.value))}
+                      min="0"
+                      max="200"
+                      className="w-20 px-2 py-1 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Right Margin
+                    </label>
+                    <input
+                      type="number"
+                      value={marginR}
+                      onChange={e => setMarginR(Number(e.target.value))}
+                      min="0"
+                      max="200"
+                      className="w-20 px-2 py-1 border rounded"
+                    />
+                  </div>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
+        {/* Right Column - Video Player and Preview */}
+        <div className="flex flex-col gap-4 h-[50vh]">
+          <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+            {videoUrl && (
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls={false}
+                  className="w-full h-full object-contain"
+                />
+                <div
+                  ref={previewRef}
+                  className="absolute left-0 right-0 flex items-center justify-center pointer-events-none"
+                  style={{
+                    bottom: `${marginV}px`,
+                    padding: "4px",
+                  }}
+                >
+                  <div
+                    className="subtitle-preview text-center px-4 py-2 rounded"
+                    style={{
+                      color: primaryColor,
+                      fontSize: `${fontSize}px`,
+                      fontWeight: bold ? "bold" : "normal",
+                      fontStyle: italic ? "italic" : "normal",
+                      textDecoration: `${underline ? "underline" : ""} ${
+                        strikeOut ? "line-through" : ""
+                      }`,
+                      letterSpacing: `${spacing}px`,
+                      transform: `scale(${scaleX / 100}, ${
+                        scaleY / 100
+                      }) rotate(${angle}deg)`,
+                      ...(borderStyle === 3 && {
+                        backgroundColor: `${backgroundColor}${Math.round(
+                          backgroundOpacity * 255
+                        )
+                          .toString(16)
+                          .padStart(2, "0")}`,
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                      }),
+                      ...(borderStyle === 1 && {
+                        textShadow:
+                          outlineWidth > 0
+                            ? `
+                            -${outlineWidth}px -${outlineWidth}px 0 ${outlineColor},
+                            ${outlineWidth}px -${outlineWidth}px 0 ${outlineColor},
+                            -${outlineWidth}px ${outlineWidth}px 0 ${outlineColor},
+                            ${outlineWidth}px ${outlineWidth}px 0 ${outlineColor}
+                          `
+                            : "none",
+                      }),
+                      ...(borderStyle === 4 && {
+                        textShadow: `
+                          ${outlineWidth}px ${outlineWidth}px ${
+                          shadow * 2
+                        }px ${outlineColor},
+                          ${
+                            shadow > 0
+                              ? `0 0 ${shadow * 2}px ${backgroundColor}`
+                              : ""
+                          }
+                        `,
+                        WebkitTextStroke: `${outlineWidth}px ${outlineColor}`,
+                      }),
+                      marginLeft: `${marginL}px`,
+                      marginRight: `${marginR}px`,
+                      marginBottom: `${marginV}px`,
+                    }}
+                  >
+                    {currentSubtitle}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <p
+            ref={messageRef}
+            className="text-sm text-gray-600 min-h-[1.5rem]"
+          ></p>
+          <div className="flex items-center justify-center gap-x-10">
+            <Button
+              onClick={() => {
+                videoRef.current?.play();
+              }}
+            >
+              Play
+            </Button>
+            <Button
+              onClick={() => {
+                videoRef.current?.pause();
+              }}
+            >
+              Pause
+            </Button>
+          </div>
 
-        <p ref={messageRef} className="text-red-500 mt-2"></p>
-
-        <button
-          onClick={exportVideoWithSubtitles}
-          disabled={!videoFile || !subtitles}
-          className="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Export with ASS Subtitles
-        </button>
+          <button
+            onClick={exportVideoWithSubtitles}
+            disabled={!videoFile || !subtitles || !isFFmpegLoaded}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            {isFFmpegLoaded
+              ? "Export Video with Subtitles"
+              : "Loading FFmpeg..."}
+          </button>
+        </div>
       </div>
     </div>
   );
