@@ -6,6 +6,7 @@ import roboto from "../fonts/Roboto-Regular.ttf";
 import robotoBold from "../fonts/Roboto-Bold.ttf";
 import { Button } from "@/components/ui/button";
 import { DummyAssSubtileKaroke } from "@/lib/DummyData";
+import { Muxer, ArrayBufferTarget } from "webm-muxer";
 
 function toFFmpegColor(rgb) {
   const bgr = rgb.slice(5, 7) + rgb.slice(3, 5) + rgb.slice(1, 3);
@@ -49,6 +50,7 @@ const Test = () => {
   const [isFFmpegLoaded, setIsFFmpegLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const messageRef = useRef<HTMLParagraphElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [videoFile, setVideoFile] = React.useState<File | null>(null);
   const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
   const [subtitles, setSubtitles] = React.useState<Array<{
@@ -56,6 +58,14 @@ const Test = () => {
     end: number;
     text: string;
   }> | null>(null);
+  const [videoInfo, setVideoInfo] = React.useState<{
+    width: number;
+    height: number;
+    duration: number;
+    fps: number;
+  } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   // Style preset selection
   const [selectedStyle, setSelectedStyle] =
@@ -202,99 +212,238 @@ const Test = () => {
         const url = URL.createObjectURL(file);
         setVideoUrl(url);
         // setSubtitles([]);
+
+        // Get video information when a file is loaded
+        const video = document.createElement("video");
+        video.onloadedmetadata = () => {
+          setVideoInfo({
+            width: video.videoWidth,
+            height: video.videoHeight,
+            duration: video.duration,
+            fps: 30, // Assuming 30fps as default
+          });
+        };
+        video.src = url;
       }
     } catch (error) {
       console.error("Error handling file change:", error);
     }
   };
-  const exportVideoWithSubtitlesOld = async () => {
-    if (!videoFile || !subtitles) return;
+  // Render a subtitle frame to canvas
+  const renderSubtitleToCanvas = (canvas, subtitle, timestamp) => {
+    if (!canvas) return;
 
-    try {
-      const ffmpeg = ffmpegRef.current;
-      const inputName = "input.mp4";
-      const outputName = "output.mp4";
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      // Write video file to FFmpeg's virtual file system
-      await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
+    // Clear the canvas with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Create subtitles file in ASS format
-      let subtitleContent = "";
-      const subtitleFilename = "subs.ass";
+    // Find subtitle that should be displayed at this timestamp
+    const currentSub = subtitle
+      ? subtitles?.find(sub => timestamp >= sub.start && timestamp <= sub.end)
+      : null;
 
-      // Generate background color with opacity
-      const bgColorWithOpacity = `${toFFmpegColor(backgroundColor)}${Math.round(
-        backgroundOpacity * 255
-      )
+    if (!currentSub) return; // No subtitle to display at this time
+
+    // Set text style based on user settings
+    ctx.font = `${bold ? "bold" : ""} ${
+      italic ? "italic" : ""
+    } ${fontSize}px 'Roboto'`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+
+    // Calculate text position
+    const x = canvas.width / 2;
+    const y = canvas.height - marginV;
+
+    // Apply text styling based on borderStyle
+    if (borderStyle === 3) {
+      // Opaque box
+      // Measure text to create background box
+      const metrics = ctx.measureText(currentSub.text);
+      const textHeight = fontSize * 1.2; // Approximate height based on font size
+      const padding = 8;
+
+      // Draw background box
+      ctx.fillStyle = `${backgroundColor}${Math.round(backgroundOpacity * 255)
         .toString(16)
         .padStart(2, "0")}`;
+      ctx.fillRect(
+        x - metrics.width / 2 - padding,
+        y - textHeight - padding,
+        metrics.width + padding * 2,
+        textHeight + padding * 2
+      );
+    }
 
-      // ASS format with all customizable properties
-      subtitleContent = `[Script Info]
-ScriptType: v4.00+
-PlayResX: 384
-PlayResY: 288
+    // Draw text outline/shadow if needed
+    if (borderStyle === 1 || borderStyle === 4) {
+      // Outline or shadow
+      ctx.strokeStyle = outlineColor;
+      ctx.lineWidth = outlineWidth * 2;
+      ctx.lineJoin = "round";
+      ctx.strokeText(currentSub.text, x, y);
 
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Roboto Bold,${fontSize},${toFFmpegColor(
-        primaryColor
-      )},&H000000FF,${toFFmpegColor(
-        outlineColor
-      )},${bgColorWithOpacity},${bold},${italic},${underline},${strikeOut},${scaleX},${scaleY},${spacing},${angle},${borderStyle},${outlineWidth},${shadow},${alignment},${marginL},${marginR},${marginV},0
+      if (borderStyle === 4 && shadow > 0) {
+        // Shadow
+        ctx.shadowColor = outlineColor;
+        ctx.shadowBlur = shadow * 4;
+        ctx.shadowOffsetX = outlineWidth;
+        ctx.shadowOffsetY = outlineWidth;
+      }
+    }
 
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-`;
+    // Draw the main text
+    ctx.fillStyle = primaryColor;
+    ctx.shadowColor = "transparent"; // Reset shadow for main text
+    ctx.fillText(currentSub.text, x, y);
+  };
 
-      subtitles.forEach((sub, index) => {
-        subtitleContent += `Dialogue: 0,${formatAssTime(
-          sub.start
-        )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
+  // Create a subtitle-only video using WebCodecs and webm-muxer
+  const createSubtitleOnlyVideo = async () => {
+    if (!videoInfo || !subtitles || !subtitles.length) {
+      throw new Error("Video info or subtitles not available");
+    }
+
+    if (!("VideoEncoder" in window)) {
+      throw new Error("WebCodecs API not supported in this browser");
+    }
+
+    try {
+      // Create an offscreen canvas for rendering subtitles
+      const canvas = document.createElement("canvas");
+      canvas.width = videoInfo.width;
+      canvas.height = videoInfo.height;
+
+      // Calculate total frames based on video duration and fps
+      const totalFrames = Math.ceil(videoInfo.duration * videoInfo.fps);
+      const frameDuration = 1000 / videoInfo.fps; // ms per frame
+
+      // Setup WebM muxer with ArrayBufferTarget for VP9 video with alpha channel
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({
+        target: target,
+        video: {
+          codec: "V_VP9",
+          width: canvas.width,
+          height: canvas.height,
+          frameRate: videoInfo.fps,
+          alpha: true, // Enable alpha channel for transparency
+        },
       });
 
-      console.log("subtitle in export: ", {
-        subtitleFilename,
-        subtitleContent,
+      // Create VideoEncoder
+      const videoEncoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: e => {
+          console.error("Encoder error:", e);
+        },
       });
-      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
 
-      // Use the ASS file directly without force_style since all styles are in the file
+      // Configure the encoder
+      videoEncoder.configure({
+        codec: "vp09.00.10.08",
+        width: canvas.width,
+        height: canvas.height,
+        bitrate: 1e6,
+      });
+
+      // Process each frame
+      for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+        const timestamp = frameIndex * frameDuration;
+
+        // Update progress
+        setExportProgress(Math.round((frameIndex / totalFrames) * 50)); // First half of progress
+
+        // Render subtitle for this frame
+        renderSubtitleToCanvas(canvas, subtitles, timestamp);
+
+        // Create a VideoFrame from the canvas
+        const frame = new VideoFrame(canvas, {
+          timestamp: timestamp * 1000, // microseconds
+          duration: frameDuration * 1000, // microseconds
+        });
+
+        // Encode the frame
+        videoEncoder.encode(frame, { keyFrame: frameIndex % 150 === 0 });
+        frame.close();
+
+        // Allow UI to update by yielding execution
+        if (frameIndex % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+
+      // Finish encoding
+      await videoEncoder.flush();
+      videoEncoder.close();
+
+      // Finalize the WebM file
+      muxer.finalize();
+      const { buffer } = target;
+      const webmBlob = new Blob([buffer], { type: "video/webm" });
+      return webmBlob;
+    } catch (error) {
+      console.error("Error creating subtitle video:", error);
+      throw error;
+    }
+  };
+
+  const exportVideoWithSubtitles = async () => {
+    if (!videoFile || !subtitles || !videoInfo) return;
+
+    try {
+      setIsExporting(true);
+      setExportProgress(0);
+
+      // Step 1: Create subtitle-only video with transparent background using WebCodecs
+      if (messageRef.current) {
+        messageRef.current.textContent = "Creating subtitle overlay...";
+      }
+
+      const subtitleVideoBlob = await createSubtitleOnlyVideo();
+
+      // Step 2: Use ffmpeg.wasm to overlay the subtitle video on the original video
+      if (messageRef.current) {
+        messageRef.current.textContent = "Overlaying subtitles on video...";
+      }
+
+      const ffmpeg = ffmpegRef.current;
+      const inputName = "input.mp4";
+      const subtitleName = "subtitles.webm";
+      const outputName = "output.mp4";
+
+      // Write both videos to FFmpeg's virtual file system
+      await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
+      await ffmpeg.writeFile(subtitleName, await fetchFile(subtitleVideoBlob));
+
+      // Use FFmpeg's overlay filter to combine the videos
       await ffmpeg.exec([
         "-i",
         inputName,
+        "-i",
+        subtitleName,
+        "-filter_complex",
+        "[0:v][1:v]overlay=format=auto",
+        "-c:a",
+        "copy",
+        "-to",
+        "00:00:05", // Limit to 10 seconds for testing
         "-preset",
         "ultrafast",
-        "-to",
-        "00:00:03", // till only 3 seconds
-        "-vf",
-        `subtitles=${subtitleFilename}:fontsdir=/tmp`,
         outputName,
       ]);
 
-      // old command
+      setExportProgress(90);
 
-      // await ffmpeg.exec([
-      //   "-i",
-      //   inputName,
-      //   "-vf",
-      //   fontFile
-      //     ? "subtitles=subtitles.srt:fontsdir=./:force_style='FontName=font.ttf'"
-      //     : "subtitles=subtitles.srt",
-      //   "-s",
-      //   "854x480", // 480p resolution
-      //   "-r",
-      //   "24", // 24fps
-      //   "-c:a",
-      //   "copy",
-      //   outputName,
-      // ]);
-
-      // Read and download the result
+      // Read and download the output file
       const data = await ffmpeg.readFile(outputName);
       const url = URL.createObjectURL(
         new Blob([data.buffer], { type: "video/mp4" })
       );
+
+      setExportProgress(100);
 
       const a = document.createElement("a");
       a.href = url;
@@ -306,9 +455,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         messageRef.current.textContent =
           "Error exporting video: " + error?.message;
       }
+    } finally {
+      setIsExporting(false);
     }
   };
-  const exportVideoWithSubtitles = async () => {
+
+  // Legacy export function using only ffmpeg.wasm with drawtext filters
+  const exportVideoWithSubtitlesLegacy = async () => {
     if (!videoFile || !subtitles) return;
 
     try {
@@ -331,8 +484,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       };
 
       // Build drawtext filter chain for each subtitle item.
-      // Using styling: fontsize 24, primary color (red text), background (blue with opacity),
-      // and centered at the bottom.
       const drawtextFilters = subtitles
         .map(sub => {
           const startSec = msToSeconds(sub.start);
@@ -346,8 +497,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
           )}@${backgroundOpacity}:boxborderw=${outlineWidth}:x=(w-text_w)/2:y=h-th-${marginV}:enable='between(t,${startSec},${endSec})'`;
         })
         .join(",");
-
-      console.log("Drawtext filters:", drawtextFilters);
 
       // Execute FFmpeg command with drawtext filters to burn in the subtitles
       await ffmpeg.exec([
@@ -424,6 +573,37 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     setAlignment(preset.alignment);
     setMarginL(preset.marginL);
     setMarginR(preset.marginR);
+  };
+
+  const downloadSubtitleOnlyVideo = async () => {
+    if (!videoInfo || !subtitles) return;
+
+    try {
+      setIsExporting(true);
+      setExportProgress(0);
+
+      if (messageRef.current) {
+        messageRef.current.textContent = "Creating subtitle video...";
+      }
+
+      const subtitleVideoBlob = await createSubtitleOnlyVideo();
+      const url = URL.createObjectURL(subtitleVideoBlob);
+
+      setExportProgress(100);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "subtitles.webm";
+      a.click();
+    } catch (error) {
+      console.error("Error creating subtitle video:", error);
+      if (messageRef.current) {
+        messageRef.current.textContent =
+          "Error creating subtitle video: " + error?.message;
+      }
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -789,6 +969,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             ref={messageRef}
             className="text-sm text-gray-600 min-h-[1.5rem]"
           ></p>
+          {/* Hidden canvas for rendering subtitles during export */}
+          <canvas
+            ref={canvasRef}
+            style={{ display: "none" }}
+            width="1280"
+            height="720"
+          ></canvas>
           <div className="flex items-center justify-center gap-x-10">
             <Button
               onClick={() => {
@@ -806,15 +993,59 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             </Button>
           </div>
 
-          <button
-            onClick={exportVideoWithSubtitles}
-            disabled={!videoFile || !subtitles || !isFFmpegLoaded}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          >
-            {isFFmpegLoaded
-              ? "Export Video with Subtitles"
-              : "Loading FFmpeg..."}
-          </button>
+          <div className="space-y-4">
+            {/* Export method selector */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="useWebCodecs"
+                checked={useAssFormat}
+                onChange={e => setUseAssFormat(!e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label htmlFor="useWebCodecs" className="text-sm font-medium">
+                Use WebCodecs API (TikTok style)
+              </label>
+            </div>
+
+            {/* Export buttons with progress */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  exportVideoWithSubtitles();
+                }}
+                disabled={
+                  !videoFile || !subtitles || !isFFmpegLoaded || isExporting
+                }
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 flex-1"
+              >
+                {!isFFmpegLoaded
+                  ? "Loading FFmpeg..."
+                  : isExporting
+                  ? `Exporting... ${exportProgress}%`
+                  : "Export Video with Subtitles"}
+              </button>
+
+              <button
+                onClick={downloadSubtitleOnlyVideo}
+                disabled={!subtitles || !videoInfo || isExporting}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 flex-1"
+              >
+                {isExporting
+                  ? `Exporting... ${exportProgress}%`
+                  : "Download Subtitles Only"}
+              </button>
+            </div>
+
+            {isExporting && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${exportProgress}%` }}
+                ></div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
