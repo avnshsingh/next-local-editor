@@ -425,11 +425,15 @@ const Test = () => {
         "-i",
         subtitleName,
         "-filter_complex",
-        "[0:v][1:v]overlay=format=auto",
+        "[1:v]colorkey=0x000000:0.1:0.2[ckout];[0:v][ckout]overlay=format=auto",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
         "-c:a",
         "copy",
         "-to",
-        "00:00:05", // Limit to 10 seconds for testing
+        "00:00:05", // Limit to 5 seconds for testing
         "-preset",
         "ultrafast",
         outputName,
