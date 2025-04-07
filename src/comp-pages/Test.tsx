@@ -300,6 +300,67 @@ const Test = () => {
     ctx.fillText(currentSub.text, x, y);
   };
 
+  // Render a subtitle frame to canvas with rounded corner of red background and yellow text
+  const renderSubtitleToCanvasWithRounedCorner = (
+    canvas,
+    subtitles,
+    timestamp
+  ) => {
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const currentSub = subtitles?.find(
+      sub => timestamp >= sub.start && timestamp <= sub.end
+    );
+
+    if (!currentSub) return;
+
+    // === Styling ===
+    const fontSize = 32;
+    const fontFamily = "Roboto";
+    const padding = 12;
+    const borderRadius = 12;
+    const x = canvas.width / 2;
+    const y = canvas.height - 80;
+
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const text = currentSub.text;
+    const metrics = ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = fontSize * 1.2;
+
+    // Draw red rounded background
+    const boxX = x - textWidth / 2 - padding;
+    const boxY = y - textHeight / 2 - padding;
+    const boxW = textWidth + padding * 2;
+    const boxH = textHeight + padding * 2;
+
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, borderRadius, "#FF0000");
+
+    // Draw yellow text
+    ctx.fillStyle = "#FFFF00";
+    ctx.fillText(text, x, y);
+  };
+
+  function drawRoundedRect(ctx, x, y, width, height, radius, fillColor) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+  }
+
   // Create a subtitle-only video using WebCodecs and webm-muxer
   const createSubtitleOnlyVideo = async () => {
     if (!videoInfo || !subtitles || !subtitles.length) {
