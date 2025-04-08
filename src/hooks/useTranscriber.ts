@@ -49,8 +49,8 @@ export interface Transcriber {
   setSubtask: (subtask: string) => void;
   language?: string;
   setLanguage: (language: string) => void;
-  startTime: Date | null;
-  endTime: Date | null;
+  startTime: number;
+  endTime: number;
 }
 
 export function useTranscriber(): Transcriber {
@@ -60,11 +60,12 @@ export function useTranscriber(): Transcriber {
   const [isBusy, setIsBusy] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [endTime, setEndTime] = useState<number>(0);
 
   const webWorker = useWorker(event => {
     const message = event.data;
+    console.log("message", message);
     // Update the state with the result
     switch (message.status) {
       case "progress":
@@ -82,6 +83,7 @@ export function useTranscriber(): Transcriber {
         // Received partial update
         // console.log("update", message);
         // eslint-disable-next-line no-case-declarations
+        setEndTime(new Date().getTime());
         const updateMessage = message as TranscriberUpdateData;
         setTranscript({
           isBusy: true,
