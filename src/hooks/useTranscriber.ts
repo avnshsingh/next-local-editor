@@ -49,6 +49,8 @@ export interface Transcriber {
   setSubtask: (subtask: string) => void;
   language?: string;
   setLanguage: (language: string) => void;
+  startTime: Date | null;
+  endTime: Date | null;
 }
 
 export function useTranscriber(): Transcriber {
@@ -57,8 +59,9 @@ export function useTranscriber(): Transcriber {
   );
   const [isBusy, setIsBusy] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
-
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
 
   const webWorker = useWorker(event => {
     const message = event.data;
@@ -90,6 +93,7 @@ export function useTranscriber(): Transcriber {
         // Received complete transcript
         // console.log("complete", message);
         // eslint-disable-next-line no-case-declarations
+        setEndTime(new Date().getTime());
         const completeMessage = message as TranscriberCompleteData;
         setTranscript({
           isBusy: false,
@@ -105,6 +109,7 @@ export function useTranscriber(): Transcriber {
         setProgressItems(prev => [...prev, message]);
         break;
       case "ready":
+        setStartTime(new Date().getTime());
         setIsModelLoading(false);
         break;
       case "error":
@@ -193,6 +198,8 @@ export function useTranscriber(): Transcriber {
       setSubtask,
       language,
       setLanguage,
+      startTime,
+      endTime,
     };
   }, [
     isBusy,
@@ -205,6 +212,8 @@ export function useTranscriber(): Transcriber {
     quantized,
     subtask,
     language,
+    startTime,
+    endTime,
   ]);
 
   return transcriber;

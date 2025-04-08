@@ -144,8 +144,31 @@ export function AudioManager(props: { transcriber: Transcriber }) {
   const [audioDownloadUrl, setAudioDownloadUrl] = useState<string | undefined>(
     undefined
   );
+  const [duration, setDuration] = useState<string>("00:00:00");
 
   const isAudioLoading = progress !== undefined;
+
+  console.log("starTime", props.transcriber.startTime);
+  console.log("endTime", props.transcriber.endTime);
+
+  useEffect(() => {
+    if (props.transcriber.endTime && props.transcriber.startTime) {
+      const diff = Math.floor(
+        (props.transcriber.endTime - props.transcriber.startTime) / 1000
+      );
+      const hours = Math.floor(diff / 3600);
+      const minutes = Math.floor((diff % 3600) / 60);
+      const seconds = diff % 60;
+
+      const formatted = [
+        hours.toString().padStart(2, "0"),
+        minutes.toString().padStart(2, "0"),
+        seconds.toString().padStart(2, "0"),
+      ].join(":");
+
+      setDuration(formatted);
+    }
+  }, [props.transcriber.startTime, props.transcriber.endTime]);
 
   const resetAudio = () => {
     setAudioData(undefined);
@@ -288,7 +311,7 @@ export function AudioManager(props: { transcriber: Transcriber }) {
               // isAudioLoading ||
               isTranscribing={props.transcriber.isBusy}
             />
-
+            <h2>Time Taken (hh:mm:ss): {duration}</h2>
             <SettingsTile
               className="absolute right-4"
               transcriber={props.transcriber}
