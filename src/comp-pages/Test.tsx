@@ -110,6 +110,7 @@ const Test = () => {
   const [useAssFormat, setUseAssFormat] = useState(true);
   const [currentSubtitle, setCurrentSubtitle] = useState("");
   const previewRef = useRef<HTMLDivElement>(null);
+  const [isWebCodecsSupported, setIsWebCodecsSupported] = useState(false);
 
   console.log("subtitles: ", subtitles);
   console.log("videoUrl: ", videoUrl);
@@ -160,7 +161,14 @@ const Test = () => {
         console.error("Error loading FFmpeg:", error);
       }
     };
+
     loadFFmpeg();
+    if (!("VideoEncoder" in window)) {
+      setIsWebCodecsSupported(false);
+      // throw new Error("WebCodecs API not supported in this browser");
+    } else {
+      setIsWebCodecsSupported(true);
+    }
   }, []);
 
   const parseSRT = (content: string) => {
@@ -368,7 +376,8 @@ const Test = () => {
     }
 
     if (!("VideoEncoder" in window)) {
-      throw new Error("WebCodecs API not supported in this browser");
+      setIsWebCodecsSupported(false);
+      // throw new Error("WebCodecs API not supported in this browser");
     }
 
     try {
@@ -679,6 +688,7 @@ const Test = () => {
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">
               <label className="text-sm font-medium">Video File</label>
+              <h1>{!isWebCodecsSupported && "Web codec not supported"}</h1>
               <input
                 type="file"
                 accept="video/*"
