@@ -580,13 +580,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
           sub.start
         )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
       });
-
-      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
+      subtitleContent = DummyAssSubtileKaroke;
 
       console.log("subtitle in export: ", {
         subtitleFilename,
         subtitleContent,
       });
+      // return;
+      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
 
       // Use the ASS file directly without force_style since all styles are in the file
       await ffmpeg.exec([
