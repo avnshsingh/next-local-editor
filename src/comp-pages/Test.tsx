@@ -460,7 +460,7 @@ const Test = () => {
     }
   };
 
-  const exportVideoWithSubtitles = async () => {
+  const exportVideoWithSubtitlesWithWebCodec = async () => {
     if (!videoFile || !subtitles || !videoInfo) return;
 
     try {
@@ -535,7 +535,7 @@ const Test = () => {
   };
 
   // Legacy export function using only ffmpeg.wasm with drawtext filters
-  const exportVideoWithSubtitlesLegacy = async () => {
+  const exportVideoWithSubtitles = async () => {
     if (!videoFile || !subtitles) return;
 
     try {
@@ -546,50 +546,85 @@ const Test = () => {
       // Write video file to FFmpeg's virtual file system
       await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
 
-      // Helper: Convert milliseconds to seconds (as a number)
-      const msToSeconds = ms => ms / 1000;
+      // Create subtitles file in ASS format
+      let subtitleContent = "";
+      const subtitleFilename = "subs.ass";
 
-      // Helper: Escape special characters for FFmpeg drawtext filter
-      const escapeFFmpegText = text => {
-        return text
-          .replace(/\\/g, "\\\\") // escape backslashes
-          .replace(/:/g, "\\:") // escape colons
-          .replace(/'/g, "\\'"); // escape single quotes
-      };
+      // Generate background color with opacity
+      const bgColorWithOpacity = `${toFFmpegColor(backgroundColor)}${Math.round(
+        backgroundOpacity * 255
+      )
+        .toString(16)
+        .padStart(2, "0")}`;
 
-      // Build drawtext filter chain for each subtitle item.
-      const drawtextFilters = subtitles
-        .map(sub => {
-          const startSec = msToSeconds(sub.start);
-          const endSec = msToSeconds(sub.end);
-          return `drawtext=fontfile=/tmp/roboto.ttf:text='${escapeFFmpegText(
-            sub.text
-          )}':fontsize=${fontSize}:fontcolor=${toDrawTextColor(
-            primaryColor
-          )}:box=1:boxcolor=${toDrawTextColor(
-            backgroundColor
-          )}@${backgroundOpacity}:boxborderw=${outlineWidth}:x=(w-text_w)/2:y=h-th-${marginV}:enable='between(t,${startSec},${endSec})'`;
-        })
-        .join(",");
+      // ASS format with all customizable properties
+      subtitleContent = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 288
 
-      // Execute FFmpeg command with drawtext filters to burn in the subtitles
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Roboto Bold,${fontSize},${toFFmpegColor(
+        primaryColor
+      )},&H000000FF,${toFFmpegColor(
+        outlineColor
+      )},${bgColorWithOpacity},${bold},${italic},${underline},${strikeOut},${scaleX},${scaleY},${spacing},${angle},${borderStyle},${outlineWidth},${shadow},${alignment},${marginL},${marginR},${marginV},0
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
+      subtitles.forEach((sub, index) => {
+        subtitleContent += `Dialogue: 0,${formatAssTime(
+          sub.start
+        )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
+      });
+
+      await ffmpeg.writeFile(subtitleFilename, subtitleContent);
+
+      console.log("subtitle in export: ", {
+        subtitleFilename,
+        subtitleContent,
+      });
+
+      // Use the ASS file directly without force_style since all styles are in the file
       await ffmpeg.exec([
         "-i",
         inputName,
+        "-preset",
+        "ultrafast",
         "-to",
         "00:00:03", // till only 3 seconds
         "-vf",
-        drawtextFilters,
-        "-preset",
-        "ultrafast",
+        `subtitles=${subtitleFilename}:fontsdir=/tmp`,
         outputName,
       ]);
 
-      // Read and download the output file
+      // old command
+
+      // await ffmpeg.exec([
+      //   "-i",
+      //   inputName,
+      //   "-vf",
+      //   fontFile
+      //     ? "subtitles=subtitles.srt:fontsdir=./:force_style='FontName=font.ttf'"
+      //     : "subtitles=subtitles.srt",
+      //   "-s",
+      //   "854x480", // 480p resolution
+      //   "-r",
+      //   "24", // 24fps
+      //   "-c:a",
+      //   "copy",
+      //   outputName,
+      // ]);
+
+      // Read and download the result
       const data = await ffmpeg.readFile(outputName);
       const url = URL.createObjectURL(
         new Blob([data.buffer], { type: "video/mp4" })
       );
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "video_with_subtitles.mp4";
