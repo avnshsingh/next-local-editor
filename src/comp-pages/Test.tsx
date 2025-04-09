@@ -37,7 +37,7 @@ const subtitleStyles = {
     scaleY: 100,
     spacing: 0,
     angle: 0,
-    borderStyle: 4, // 1=outline, 3=opaque box, 4=shadow
+    borderStyle: 1, // 1=outline, 3=opaque box
     shadow: 0,
     alignment: 2, // 2=bottom center
     marginL: 10,
@@ -576,11 +576,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
 
       subtitles.forEach((sub, index) => {
+        // Add \k40 before each word
+        const karaokeText = sub.text
+          .split(/\s+/)
+          .map(word => `{\\k35}${word}`)
+          .join(" ");
+
         subtitleContent += `Dialogue: 0,${formatAssTime(
           sub.start
-        )},${formatAssTime(sub.end)},Default,,0,0,0,,${sub.text}\n`;
+        )},${formatAssTime(sub.end)},Default,,0,0,0,,${karaokeText}\n`;
       });
-      subtitleContent = DummyAssSubtileKaroke;
+      // subtitleContent = DummyAssSubtileKaroke;
 
       console.log("subtitle in export: ", {
         subtitleFilename,
@@ -601,24 +607,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         `subtitles=${subtitleFilename}:fontsdir=/tmp`,
         outputName,
       ]);
-
-      // old command
-
-      // await ffmpeg.exec([
-      //   "-i",
-      //   inputName,
-      //   "-vf",
-      //   fontFile
-      //     ? "subtitles=subtitles.srt:fontsdir=./:force_style='FontName=font.ttf'"
-      //     : "subtitles=subtitles.srt",
-      //   "-s",
-      //   "854x480", // 480p resolution
-      //   "-r",
-      //   "24", // 24fps
-      //   "-c:a",
-      //   "copy",
-      //   outputName,
-      // ]);
 
       // Read and download the result
       const data = await ffmpeg.readFile(outputName);
@@ -917,7 +905,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     >
                       <option value="1">Outline</option>
                       <option value="3">Opaque Box</option>
-                      <option value="4">Shadow</option>
                     </select>
                   </div>
                   <div className="space-y-2">
