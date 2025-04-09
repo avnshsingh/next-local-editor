@@ -1020,7 +1020,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                         scaleY / 100
                       }) rotate(${angle}deg)`,
                       ...(borderStyle === 3 && {
-                        backgroundColor: `${backgroundColor}${Math.round(
+                        backgroundColor: `${outlineColor}${Math.round(
                           backgroundOpacity * 255
                         )
                           .toString(16)
