@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatAssTime, toFFmpegColor } from "@/lib/VideoPlayerUtils";
 import { useSubtitles } from "@/hooks/sub/useSubtitles";
 import { useSubtitleStyles } from "@/hooks/sub/useSubtitleStyles";
+import SubStyle from "@/components/sub-editor/SubStyle";
 
 const Test = () => {
   const ffmpegRef = useRef(new FFmpeg());
@@ -278,262 +279,51 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
               />
             </div>
 
-            <div className="bg-card p-6 rounded-lg border shadow-sm">
-              <h2 className="text-xl font-semibold mb-6">
-                Subtitle Style Customization
-              </h2>
-
-              {/* Style Preset Selector */}
-              <div className="mb-6">
-                <label className="text-sm font-medium mb-2 block">
-                  Style Preset
-                </label>
-                <select
-                  value={selectedStyle}
-                  // @ts-ignore
-                  onChange={e => applyStylePreset(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="tiktok">TikTok Style</option>
-                </select>
-              </div>
-
-              {/* Basic Settings */}
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">Basic Settings</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Primary Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={e => setPrimaryColor(e.target.value)}
-                        className="w-10 h-10 rounded border"
-                      />
-                      <input
-                        type="text"
-                        value={primaryColor}
-                        onChange={e => setPrimaryColor(e.target.value)}
-                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {borderStyle === 1
-                        ? "Outline Color"
-                        : "Background Colosr"}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={outlineColor}
-                        onChange={e => setOutlineColor(e.target.value)}
-                        className="w-10 h-10 rounded border"
-                      />
-                      <input
-                        type="text"
-                        value={outlineColor}
-                        onChange={e => setOutlineColor(e.target.value)}
-                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Background Color
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={backgroundColor}
-                        onChange={e => setBackgroundColor(e.target.value)}
-                        className="w-10 h-10 rounded border"
-                      />
-                      <input
-                        type="text"
-                        value={backgroundColor}
-                        onChange={e => setBackgroundColor(e.target.value)}
-                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-24"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Background Opacity
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        value={backgroundOpacity}
-                        onChange={e =>
-                          setBackgroundOpacity(Number(e.target.value))
-                        }
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
-                      />
-                      <span className="text-sm font-medium w-12 text-right">
-                        {Math.round(backgroundOpacity * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Font Size</label>
-                    <input
-                      type="number"
-                      value={fontSize}
-                      onChange={e => setFontSize(Number(e.target.value))}
-                      min="12"
-                      max="72"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Outline Width</label>
-                    <input
-                      type="number"
-                      value={outlineWidth}
-                      onChange={e => setOutlineWidth(Number(e.target.value))}
-                      min="0"
-                      max="4"
-                      step="0.1"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Advanced Settings - Collapsible */}
-              <details className="mb-6 [&_summary::-webkit-details-marker]:hidden">
-                <summary className="text-lg font-medium mb-4 cursor-pointer inline-flex items-center hover:text-primary">
-                  Advanced Settings
-                  <svg
-                    className="h-4 w-4 ml-2 transition-transform duration-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </summary>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-card rounded-lg border mt-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Text Alignment
-                    </label>
-                    <select
-                      value={alignment}
-                      onChange={e => setAlignment(Number(e.target.value))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="1">Bottom Left</option>
-                      <option value="2">Bottom Center</option>
-                      <option value="3">Bottom Right</option>
-                      <option value="4">Middle Left</option>
-                      <option value="5">Middle Center</option>
-                      <option value="6">Middle Right</option>
-                      <option value="7">Top Left</option>
-                      <option value="8">Top Center</option>
-                      <option value="9">Top Right</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Border Style</label>
-                    <select
-                      value={borderStyle}
-                      // @ts-ignore
-                      onChange={e => setBorderStyle(Number(e.target.value))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="1">Outline</option>
-                      <option value="3">Opaque Box</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Shadow Distance
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        value={shadow}
-                        onChange={e => setShadow(Number(e.target.value))}
-                        min="0"
-                        max="4"
-                        step="0.5"
-                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
-                      />
-                      <input
-                        type="number"
-                        value={shadow}
-                        onChange={e => setShadow(Number(e.target.value))}
-                        min="0"
-                        max="4"
-                        step="0.5"
-                        className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Vertical Margin
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        value={marginV}
-                        onChange={e => setMarginV(Number(e.target.value))}
-                        min="0"
-                        max="200"
-                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
-                      />
-                      <input
-                        type="number"
-                        value={marginV}
-                        onChange={e => setMarginV(Number(e.target.value))}
-                        min="0"
-                        max="200"
-                        className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Left Margin
-                    </label>
-                    <input
-                      type="number"
-                      value={marginL}
-                      onChange={e => setMarginL(Number(e.target.value))}
-                      min="0"
-                      max="200"
-                      className="w-20 px-2 py-1 border rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Right Margin
-                    </label>
-                    <input
-                      type="number"
-                      value={marginR}
-                      onChange={e => setMarginR(Number(e.target.value))}
-                      min="0"
-                      max="200"
-                      className="w-20 px-2 py-1 border rounded"
-                    />
-                  </div>
-                </div>
-              </details>
-            </div>
+            {/* Using the SubStyle component instead of inline styling UI */}
+            <SubStyle
+              selectedStyle={selectedStyle}
+              primaryColor={primaryColor}
+              outlineColor={outlineColor}
+              backgroundColor={backgroundColor}
+              backgroundOpacity={backgroundOpacity}
+              fontSize={fontSize}
+              marginV={marginV}
+              outlineWidth={outlineWidth}
+              bold={bold}
+              italic={italic}
+              underline={underline}
+              strikeOut={strikeOut}
+              scaleX={scaleX}
+              scaleY={scaleY}
+              spacing={spacing}
+              angle={angle}
+              borderStyle={borderStyle}
+              shadow={shadow}
+              alignment={alignment}
+              marginL={marginL}
+              marginR={marginR}
+              setPrimaryColor={setPrimaryColor}
+              setOutlineColor={setOutlineColor}
+              setBackgroundColor={setBackgroundColor}
+              setBackgroundOpacity={setBackgroundOpacity}
+              setFontSize={setFontSize}
+              setMarginV={setMarginV}
+              setOutlineWidth={setOutlineWidth}
+              setBold={setBold}
+              setItalic={setItalic}
+              setUnderline={setUnderline}
+              setStrikeOut={setStrikeOut}
+              setScaleX={setScaleX}
+              setScaleY={setScaleY}
+              setSpacing={setSpacing}
+              setAngle={setAngle}
+              setBorderStyle={setBorderStyle}
+              setShadow={setShadow}
+              setAlignment={setAlignment}
+              setMarginL={setMarginL}
+              setMarginR={setMarginR}
+              applyStylePreset={applyStylePreset}
+            />
           </div>
         </div>
         {/* Right Column - Video Player and Preview */}
