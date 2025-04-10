@@ -12,6 +12,7 @@ import { useSubtitles } from "@/hooks/sub/useSubtitles";
 import { useSubtitleStyles } from "@/hooks/sub/useSubtitleStyles";
 import SubStyle from "@/components/sub-editor/SubStyle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const Test = () => {
   const ffmpegRef = useRef(new FFmpeg());
@@ -200,7 +201,7 @@ PlayResY: 288
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Roboto Bold,${fontSize},${toFFmpegColor(
+Style: Default,Roboto,${fontSize},${toFFmpegColor(
         primaryColor
       )},&H000000FF,${toFFmpegColor(
         outlineColor
@@ -517,86 +518,97 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
           </Tabs>
         </div>
         {/* Right Column - Video Player and Preview */}
-        <div className="flex flex-col gap-4 h-[50vh]">
-          <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+        <div className="flex flex-col gap-4 items-center h-[50vh] md:h-auto">
+          <div
+            className="relative w-full bg-background rounded-lg overflow-hidden flex items-center justify-center"
+            style={{
+              minHeight: "510px",
+              maxWidth:
+                Number(cropSettings?.aspectRatio?.split(":")[0]) === 16
+                  ? "1000px"
+                  : "310px",
+            }}
+          >
             {videoUrl && (
               <>
-                <div
-                  className="relative w-full h-full"
-                  style={{
-                    aspectRatio: cropSettings.aspectRatio.replace(":", "/"),
-                  }}
+                <AspectRatio
+                  ratio={
+                    Number(cropSettings.aspectRatio.split(":")[0]) /
+                    Number(cropSettings.aspectRatio.split(":")[1])
+                  }
+                  className="h-auto relative overflow-hidden"
+                  style={{ border: `2px solid yellow` }}
                 >
                   <video
                     ref={videoRef}
                     src={videoUrl}
                     controls={false}
-                    className="absolute w-full h-full object-cover"
+                    className="w-full h-full object-cover"
                   />
-                </div>
-                <div
-                  ref={previewRef}
-                  className="absolute left-0 right-0 flex items-center justify-center pointer-events-none"
-                  style={{
-                    bottom: `${marginV}px`,
-                    padding: "4px",
-                  }}
-                >
                   <div
-                    className="subtitle-preview text-center px-4 py-2 rounded"
+                    ref={previewRef}
+                    className="absolute left-0 right-0 bottom-0 flex items-center justify-center pointer-events-none z-10"
                     style={{
-                      color: primaryColor,
-                      fontSize: `${fontSize}px`,
-                      fontWeight: bold ? "bold" : "normal",
-                      fontStyle: italic ? "italic" : "normal",
-                      textDecoration: `${underline ? "underline" : ""} ${
-                        strikeOut ? "line-through" : ""
-                      }`,
-                      letterSpacing: `${spacing}px`,
-                      transform: `scale(${scaleX / 100}, ${
-                        scaleY / 100
-                      }) rotate(${angle}deg)`,
-                      ...(borderStyle === 3 && {
-                        backgroundColor: `${outlineColor}${Math.round(
-                          backgroundOpacity * 255
-                        )
-                          .toString(16)
-                          .padStart(2, "0")}`,
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                      }),
-                      ...(borderStyle === 1 && {
-                        textShadow:
-                          outlineWidth > 0
-                            ? `
+                      bottom: `${marginV}px`,
+                      padding: "4px",
+                    }}
+                  >
+                    <div
+                      className="subtitle-preview text-center px-4 py-2 rounded"
+                      style={{
+                        color: primaryColor,
+                        fontSize: `${fontSize}px`,
+                        fontWeight: bold ? "bold" : "normal",
+                        fontStyle: italic ? "italic" : "normal",
+                        textDecoration: `${underline ? "underline" : ""} ${
+                          strikeOut ? "line-through" : ""
+                        }`,
+                        letterSpacing: `${spacing}px`,
+                        transform: `scale(${scaleX / 100}, ${
+                          scaleY / 100
+                        }) rotate(${angle}deg)`,
+                        ...(borderStyle === 3 && {
+                          backgroundColor: `${outlineColor}${Math.round(
+                            backgroundOpacity * 255
+                          )
+                            .toString(16)
+                            .padStart(2, "0")}`,
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                        }),
+                        ...(borderStyle === 1 && {
+                          textShadow:
+                            outlineWidth > 0
+                              ? `
                             -${outlineWidth}px -${outlineWidth}px 0 ${outlineColor},
                             ${outlineWidth}px -${outlineWidth}px 0 ${outlineColor},
                             -${outlineWidth}px ${outlineWidth}px 0 ${outlineColor},
                             ${outlineWidth}px ${outlineWidth}px 0 ${outlineColor}
                           `
-                            : "none",
-                      }),
-                      ...(borderStyle === 4 && {
-                        textShadow: `
+                              : "none",
+                        }),
+                        ...(borderStyle === 4 && {
+                          textShadow: `
                           ${outlineWidth}px ${outlineWidth}px ${
-                          shadow * 2
-                        }px ${outlineColor},
+                            shadow * 2
+                          }px ${outlineColor},
                           ${
                             shadow > 0
                               ? `0 0 ${shadow * 2}px ${backgroundColor}`
                               : ""
                           }
                         `,
-                        WebkitTextStroke: `${outlineWidth}px ${outlineColor}`,
-                      }),
-                      marginLeft: `${marginL}px`,
-                      marginRight: `${marginR}px`,
-                      marginBottom: `${marginV}px`,
-                    }}
-                  >
-                    {currentSubtitle}
+                          WebkitTextStroke: `${outlineWidth}px ${outlineColor}`,
+                        }),
+                        marginLeft: `${marginL}px`,
+                        marginRight: `${marginR}px`,
+                        marginBottom: `${marginV}px`,
+                      }}
+                    >
+                      {currentSubtitle}
+                    </div>
                   </div>
-                </div>
+                </AspectRatio>
               </>
             )}
           </div>
