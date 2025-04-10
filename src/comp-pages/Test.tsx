@@ -31,6 +31,14 @@ const Test = () => {
   const [currentSubtitle, setCurrentSubtitle] = useState("");
   const previewRef = useRef<HTMLDivElement>(null);
   const [isWebCodecsSupported, setIsWebCodecsSupported] = useState(false);
+  const [cropSettings, setCropSettings] = useState({
+    aspectRatio: "16:9",
+    filter: "crop=ih*16/9:ih",
+  });
+  const [exportSettings, setExportSettings] = useState({
+    resolution: "1080p",
+    filter: "scale=1920:1080",
+  });
 
   const { handleSubtitleChange, subtitles } = useSubtitles();
   const {
@@ -104,7 +112,7 @@ const Test = () => {
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
         const ffmpeg = ffmpegRef.current;
         ffmpeg.on("log", ({ message }) => {
-          console.log("on ffmpeg: ", message);
+          // console.log("on ffmpeg: ", message);
           if (messageRef.current) {
             messageRef.current.innerHTML = message;
           }
@@ -223,7 +231,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       await ffmpeg.writeFile(subtitleFilename, subtitleContent);
 
       // Use the ASS file directly without force_style since all styles are in the file
-      await ffmpeg.exec([
+      console.warn({ cropSettings, exportSettings });
+
+      const command = [
         "-i",
         inputName,
         "-preset",
@@ -231,9 +241,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         "-to",
         "00:00:03", // till only 3 seconds
         "-vf",
-        `subtitles=${subtitleFilename}:fontsdir=/tmp`,
+        `${cropSettings.filter},${exportSettings.filter},subtitles=${subtitleFilename}:fontsdir=/tmp`,
         outputName,
-      ]);
+      ];
+      console.log("command: ", command);
+      // Execute the FFmpeg command with the provided optio
+      await ffmpeg.exec(command);
 
       // Read and download the result
       const data: any = await ffmpeg.readFile(outputName);
@@ -263,6 +276,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             <TabsList>
               <TabsTrigger value="upload">Upload</TabsTrigger>
               <TabsTrigger value="subtitle">Subtitle</TabsTrigger>
+              <TabsTrigger value="crop">Crop</TabsTrigger>
+              <TabsTrigger value="export">Export</TabsTrigger>
             </TabsList>
             {/* UPLOAD TAB */}
             <TabsContent value="upload">
@@ -287,6 +302,168 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     onChange={handleSubtitleChange}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="crop">
+              <div className="flex flex-col gap-4">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">
+                    Aspect Ratio Presets
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCropSettings({
+                          aspectRatio: "16:9",
+                          filter: "crop=ih*16/9:ih",
+                        });
+                      }}
+                    >
+                      Landscape (16:9)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCropSettings({
+                          aspectRatio: "9:16",
+                          filter: "crop=ih*9/16:ih",
+                        });
+                      }}
+                    >
+                      Portrait (9:16)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCropSettings({
+                          aspectRatio: "1:1",
+                          filter: "crop=ih:ih",
+                        });
+                      }}
+                    >
+                      Square (1:1)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCropSettings({
+                          aspectRatio: "4:5",
+                          filter: "crop=ih*4/5:ih",
+                        });
+                      }}
+                    >
+                      Instagram (4:5)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="export">
+              <div className="flex flex-col gap-4">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">
+                    Resolution Presets
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "4K",
+                          filter: `scale=${
+                            Math.round((2160 * width) / height / 2) * 2
+                          }:2160`,
+                        });
+                      }}
+                    >
+                      4K
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "2K",
+                          filter: `scale=${
+                            Math.round((1440 * width) / height / 2) * 2
+                          }:1440`,
+                        });
+                      }}
+                    >
+                      2K
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "1080p",
+                          filter: `scale=${
+                            Math.round((1080 * width) / height / 2) * 2
+                          }:1080`,
+                        });
+                      }}
+                    >
+                      1080p
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "720p",
+                          filter: `scale=${
+                            Math.round((720 * width) / height / 2) * 2
+                          }:720`,
+                        });
+                      }}
+                    >
+                      720p
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "480p",
+                          filter: `scale=${
+                            Math.round((480 * width) / height / 2) * 2
+                          }:480`,
+                        });
+                      }}
+                    >
+                      480p
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const [width, height] = cropSettings.aspectRatio
+                          .split(":")
+                          .map(Number);
+                        setExportSettings({
+                          resolution: "360p",
+                          filter: `scale=${
+                            Math.round((360 * width) / height / 2) * 2
+                          }:360`,
+                        });
+                      }}
+                    >
+                      360p
+                    </Button>
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -344,12 +521,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
           <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
             {videoUrl && (
               <>
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  controls={false}
-                  className="w-full h-full object-contain"
-                />
+                <div
+                  className="relative w-full h-full"
+                  style={{
+                    aspectRatio: cropSettings.aspectRatio.replace(":", "/"),
+                  }}
+                >
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    controls={false}
+                    className="absolute w-full h-full object-cover"
+                  />
+                </div>
                 <div
                   ref={previewRef}
                   className="absolute left-0 right-0 flex items-center justify-center pointer-events-none"
