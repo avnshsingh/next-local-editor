@@ -220,127 +220,105 @@ const SubStyle = (props: SubtitleStyleProps) => {
           </div>
         </div>
       </div>
-
-      {/* Advanced Settings - Collapsible */}
-      <details className="mb-6 [&_summary::-webkit-details-marker]:hidden">
-        <summary className="text-lg font-medium mb-4 cursor-pointer inline-flex items-center hover:text-primary">
-          Advanced Settings
-          <svg
-            className="h-4 w-4 ml-2 transition-transform duration-200"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* Advanced Settings */}
+      <h1 className="text-primary text-2xl">Advance Settings</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-card rounded-lg border mt-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Text Alignment</label>
+          <select
+            value={alignment}
+            onChange={e => setAlignment(Number(e.target.value))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
+            <option value="1">Bottom Left</option>
+            <option value="2">Bottom Center</option>
+            <option value="3">Bottom Right</option>
+            <option value="4">Middle Left</option>
+            <option value="5">Middle Center</option>
+            <option value="6">Middle Right</option>
+            <option value="7">Top Left</option>
+            <option value="8">Top Center</option>
+            <option value="9">Top Right</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Border Style</label>
+          <select
+            value={borderStyle}
+            onChange={e => setBorderStyle(Number(e.target.value) as 1 | 3)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="1">Outline</option>
+            <option value="3">Opaque Box</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Shadow Distance</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              value={shadow}
+              onChange={e => setShadow(Number(e.target.value))}
+              min="0"
+              max="4"
+              step="0.5"
+              className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
             />
-          </svg>
-        </summary>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-card rounded-lg border mt-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Text Alignment</label>
-            <select
-              value={alignment}
-              onChange={e => setAlignment(Number(e.target.value))}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="1">Bottom Left</option>
-              <option value="2">Bottom Center</option>
-              <option value="3">Bottom Right</option>
-              <option value="4">Middle Left</option>
-              <option value="5">Middle Center</option>
-              <option value="6">Middle Right</option>
-              <option value="7">Top Left</option>
-              <option value="8">Top Center</option>
-              <option value="9">Top Right</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Border Style</label>
-            <select
-              value={borderStyle}
-              onChange={e => setBorderStyle(Number(e.target.value) as 1 | 3)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="1">Outline</option>
-              <option value="3">Opaque Box</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Shadow Distance</label>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                value={shadow}
-                onChange={e => setShadow(Number(e.target.value))}
-                min="0"
-                max="4"
-                step="0.5"
-                className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
-              />
-              <input
-                type="number"
-                value={shadow}
-                onChange={e => setShadow(Number(e.target.value))}
-                min="0"
-                max="4"
-                step="0.5"
-                className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Vertical Margin</label>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                value={marginV}
-                onChange={e => setMarginV(Number(e.target.value))}
-                min="0"
-                max="200"
-                className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
-              />
-              <input
-                type="number"
-                value={marginV}
-                onChange={e => setMarginV(Number(e.target.value))}
-                min="0"
-                max="200"
-                className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Left Margin
-            </label>
             <input
               type="number"
-              value={marginL}
-              onChange={e => setMarginL(Number(e.target.value))}
+              value={shadow}
+              onChange={e => setShadow(Number(e.target.value))}
               min="0"
-              max="200"
-              className="w-20 px-2 py-1 border rounded"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Right Margin
-            </label>
-            <input
-              type="number"
-              value={marginR}
-              onChange={e => setMarginR(Number(e.target.value))}
-              min="0"
-              max="200"
-              className="w-20 px-2 py-1 border rounded"
+              max="4"
+              step="0.5"
+              className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
         </div>
-      </details>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Vertical Margin</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              value={marginV}
+              onChange={e => setMarginV(Number(e.target.value))}
+              min="0"
+              max="200"
+              className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200"
+            />
+            <input
+              type="number"
+              value={marginV}
+              onChange={e => setMarginV(Number(e.target.value))}
+              min="0"
+              max="200"
+              className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Left Margin</label>
+          <input
+            type="number"
+            value={marginL}
+            onChange={e => setMarginL(Number(e.target.value))}
+            min="0"
+            max="200"
+            className="w-20 px-2 py-1 border rounded"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Right Margin</label>
+          <input
+            type="number"
+            value={marginR}
+            onChange={e => setMarginR(Number(e.target.value))}
+            min="0"
+            max="200"
+            className="w-20 px-2 py-1 border rounded"
+          />
+        </div>
+      </div>
     </div>
   );
 };
