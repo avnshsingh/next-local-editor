@@ -234,7 +234,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       ]);
 
       // Read and download the result
-      const data = await ffmpeg.readFile(outputName);
+      const data: any = await ffmpeg.readFile(outputName);
       const url = URL.createObjectURL(
         new Blob([data.buffer], { type: "video/mp4" })
       );
@@ -243,7 +243,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       a.href = url;
       a.download = "video_with_subtitles.mp4";
       a.click();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error exporting video:", error);
       if (messageRef.current) {
         messageRef.current.textContent =
@@ -290,11 +290,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 </label>
                 <select
                   value={selectedStyle}
-                  onChange={e =>
-                    applyStylePreset(
-                      e.target.value as keyof typeof subtitleStyles
-                    )
-                  }
+                  // @ts-ignore
+                  onChange={e => applyStylePreset(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="tiktok">TikTok Style</option>
@@ -452,6 +449,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     <label className="text-sm font-medium">Border Style</label>
                     <select
                       value={borderStyle}
+                      // @ts-ignore
                       onChange={e => setBorderStyle(Number(e.target.value))}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >

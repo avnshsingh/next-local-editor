@@ -16,7 +16,7 @@ export interface SubtitleStyle {
   scaleY: number;
   spacing: number;
   angle: number;
-  borderStyle: number;
+  borderStyle: 1 | 3;
   shadow: number;
   alignment: number;
   marginL: number;
@@ -53,52 +53,62 @@ export function useSubtitleStyles(
 ) {
   const [selectedStyle, setSelectedStyle] =
     useState<keyof typeof subtitlePresets>(initialPreset);
-  const [primaryColor, setPrimaryColor] = useState(
+  const [primaryColor, setPrimaryColor] = useState<string>(
     subtitlePresets[initialPreset].primaryColor
   );
-  const [outlineColor, setOutlineColor] = useState(
+  const [outlineColor, setOutlineColor] = useState<string>(
     subtitlePresets[initialPreset].outlineColor
   );
-  const [backgroundColor, setBackgroundColor] = useState(
+  const [backgroundColor, setBackgroundColor] = useState<string>(
     subtitlePresets[initialPreset].backgroundColor
   );
-  const [backgroundOpacity, setBackgroundOpacity] = useState(
+  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(
     subtitlePresets[initialPreset].backgroundOpacity
   );
-  const [fontSize, setFontSize] = useState(
+  const [fontSize, setFontSize] = useState<number>(
     subtitlePresets[initialPreset].fontSize
   );
-  const [marginV, setMarginV] = useState(
+  const [marginV, setMarginV] = useState<number>(
     subtitlePresets[initialPreset].marginV
   );
-  const [outlineWidth, setOutlineWidth] = useState(
+  const [outlineWidth, setOutlineWidth] = useState<number>(
     subtitlePresets[initialPreset].outlineWidth
   );
-  const [bold, setBold] = useState(subtitlePresets[initialPreset].bold);
-  const [italic, setItalic] = useState(subtitlePresets[initialPreset].italic);
-  const [underline, setUnderline] = useState(
+  const [bold, setBold] = useState<number>(subtitlePresets[initialPreset].bold);
+  const [italic, setItalic] = useState<number>(
+    subtitlePresets[initialPreset].italic
+  );
+  const [underline, setUnderline] = useState<number>(
     subtitlePresets[initialPreset].underline
   );
-  const [strikeOut, setStrikeOut] = useState(
+  const [strikeOut, setStrikeOut] = useState<number>(
     subtitlePresets[initialPreset].strikeOut
   );
-  const [scaleX, setScaleX] = useState(subtitlePresets[initialPreset].scaleX);
-  const [scaleY, setScaleY] = useState(subtitlePresets[initialPreset].scaleY);
-  const [spacing, setSpacing] = useState(
+  const [scaleX, setScaleX] = useState<number>(
+    subtitlePresets[initialPreset].scaleX
+  );
+  const [scaleY, setScaleY] = useState<number>(
+    subtitlePresets[initialPreset].scaleY
+  );
+  const [spacing, setSpacing] = useState<number>(
     subtitlePresets[initialPreset].spacing
   );
-  const [angle, setAngle] = useState(subtitlePresets[initialPreset].angle);
+  const [angle, setAngle] = useState<number>(
+    subtitlePresets[initialPreset].angle
+  );
   const [borderStyle, setBorderStyle] = useState(
     subtitlePresets[initialPreset].borderStyle
   );
-  const [shadow, setShadow] = useState(subtitlePresets[initialPreset].shadow);
-  const [alignment, setAlignment] = useState(
+  const [shadow, setShadow] = useState<number>(
+    subtitlePresets[initialPreset].shadow
+  );
+  const [alignment, setAlignment] = useState<number>(
     subtitlePresets[initialPreset].alignment
   );
-  const [marginL, setMarginL] = useState(
+  const [marginL, setMarginL] = useState<number>(
     subtitlePresets[initialPreset].marginL
   );
-  const [marginR, setMarginR] = useState(
+  const [marginR, setMarginR] = useState<number>(
     subtitlePresets[initialPreset].marginR
   );
 
