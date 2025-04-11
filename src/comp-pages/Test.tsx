@@ -13,6 +13,7 @@ import { useSubtitleStyles } from "@/hooks/sub/useSubtitleStyles";
 import SubStyle from "@/components/sub-editor/SubStyle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Progress } from "@/components/ui/progress";
 
 const Test = () => {
   const ffmpegRef = useRef(new FFmpeg());
@@ -40,6 +41,8 @@ const Test = () => {
     resolution: "1080p",
     filter: "scale=1920:1080",
   });
+
+  const [exportProgess, setExportProgess] = useState({ string: "", number: 0 });
 
   const { handleSubtitleChange, subtitles } = useSubtitles();
   const {
@@ -113,10 +116,22 @@ const Test = () => {
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
         const ffmpeg = ffmpegRef.current;
         ffmpeg.on("log", ({ message }) => {
-          // console.log("on ffmpeg: ", message);
+          console.log("on ffmpeg: ", message);
           if (messageRef.current) {
             messageRef.current.innerHTML = message;
           }
+        });
+        ffmpeg.on("progress", event => {
+          console.log("on progress: ", event);
+          // condition because a random number is generated in the progress beginning
+          const percentComplete = (
+            (event.progress > 100 ? 0 : event.progress) * 100 || 0
+          ).toFixed(2);
+          const timeInSeconds = event.time / 1000000 || 0;
+          setExportProgess({
+            string: percentComplete || "",
+            number: Math.floor(Number(percentComplete)) || 0,
+          });
         });
         await ffmpeg.load({
           coreURL: `${baseURL}/ffmpeg-core.js`,
@@ -612,10 +627,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
               </>
             )}
           </div>
-          <p
-            ref={messageRef}
-            className="text-sm text-gray-600 min-h-[1.5rem]"
-          ></p>
+          <div className="w-full">
+            <h2 className="text-2xl text-primary text-center mb-2">
+              Export Progress Percentage: {exportProgess?.string}
+            </h2>
+            <Progress value={exportProgess?.number} />
+          </div>
           <div className="flex items-center justify-center gap-x-10">
             <Button
               onClick={() => {
