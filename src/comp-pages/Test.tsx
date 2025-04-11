@@ -14,6 +14,7 @@ import SubStyle from "@/components/sub-editor/SubStyle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 const Test = () => {
   const ffmpegRef = useRef(new FFmpeg());
@@ -43,6 +44,7 @@ const Test = () => {
   });
 
   const [exportProgess, setExportProgess] = useState({ string: "", number: 0 });
+  const [isExporting, setIsExporting] = useState(false);
 
   const { handleSubtitleChange, subtitles } = useSubtitles();
   const {
@@ -190,6 +192,10 @@ const Test = () => {
     if (!videoFile || !subtitles) return;
 
     try {
+      if (exportSettings.resolution === "none") {
+        toast.warning("Please select export resolution from export tab");
+        return;
+      }
       const ffmpeg = ffmpegRef.current;
       const inputName = "input.mp4";
       const outputName = "output.mp4";
@@ -260,10 +266,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         `${cropSettings.filter},${exportSettings.filter},subtitles=${subtitleFilename}:fontsdir=/tmp`,
         outputName,
       ];
+      setIsExporting(true);
       console.log("command: ", command);
       // Execute the FFmpeg command with the provided optio
       await ffmpeg.exec(command);
-
+      setIsExporting(false);
       // Read and download the result
       const data: any = await ffmpeg.readFile(outputName);
       const url = URL.createObjectURL(
@@ -276,10 +283,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       a.click();
     } catch (error: any) {
       console.error("Error exporting video:", error);
-      if (messageRef.current) {
-        messageRef.current.textContent =
-          "Error exporting video: " + error?.message;
-      }
+      setIsExporting(false);
+      toast.error(error?.message || "Error error in export");
     }
   };
 
@@ -328,50 +333,49 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     Aspect Ratio Presets
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCropSettings({
-                          aspectRatio: "16:9",
-                          filter: "crop=ih*16/9:ih",
-                        });
-                      }}
-                    >
-                      Landscape (16:9)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCropSettings({
-                          aspectRatio: "9:16",
-                          filter: "crop=ih*9/16:ih",
-                        });
-                      }}
-                    >
-                      Portrait (9:16)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCropSettings({
-                          aspectRatio: "1:1",
-                          filter: "crop=ih:ih",
-                        });
-                      }}
-                    >
-                      Square (1:1)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCropSettings({
-                          aspectRatio: "4:5",
-                          filter: "crop=ih*4/5:ih",
-                        });
-                      }}
-                    >
-                      Instagram (4:5)
-                    </Button>
+                    {[
+                      {
+                        ratio: "16:9",
+                        filter: "crop=ih*16/9:ih",
+                        label: "Landscape (16:9)",
+                      },
+                      {
+                        ratio: "9:16",
+                        filter: "crop=ih*9/16:ih",
+                        label: "Portrait (9:16)",
+                      },
+                      {
+                        ratio: "1:1",
+                        filter: "crop=ih:ih",
+                        label: "Square (1:1)",
+                      },
+                      {
+                        ratio: "4:5",
+                        filter: "crop=ih*4/5:ih",
+                        label: "Instagram (4:5)",
+                      },
+                    ].map(preset => (
+                      <Button
+                        key={preset.ratio}
+                        variant={
+                          cropSettings.aspectRatio === preset.ratio
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => {
+                          setCropSettings({
+                            aspectRatio: preset.ratio,
+                            filter: preset.filter,
+                          });
+                          setExportSettings({
+                            resolution: "none",
+                            filter: "none",
+                          });
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -383,102 +387,40 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     Resolution Presets
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "4K",
-                          filter: `scale=${
-                            Math.round((2160 * width) / height / 2) * 2
-                          }:2160`,
-                        });
-                      }}
-                    >
-                      4K
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "2K",
-                          filter: `scale=${
-                            Math.round((1440 * width) / height / 2) * 2
-                          }:1440`,
-                        });
-                      }}
-                    >
-                      2K
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "1080p",
-                          filter: `scale=${
-                            Math.round((1080 * width) / height / 2) * 2
-                          }:1080`,
-                        });
-                      }}
-                    >
-                      1080p
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "720p",
-                          filter: `scale=${
-                            Math.round((720 * width) / height / 2) * 2
-                          }:720`,
-                        });
-                      }}
-                    >
-                      720p
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "480p",
-                          filter: `scale=${
-                            Math.round((480 * width) / height / 2) * 2
-                          }:480`,
-                        });
-                      }}
-                    >
-                      480p
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const [width, height] = cropSettings.aspectRatio
-                          .split(":")
-                          .map(Number);
-                        setExportSettings({
-                          resolution: "360p",
-                          filter: `scale=${
-                            Math.round((360 * width) / height / 2) * 2
-                          }:360`,
-                        });
-                      }}
-                    >
-                      360p
-                    </Button>
+                    {[
+                      { resolution: "4K", height: 2160, label: "4K" },
+                      { resolution: "2K", height: 1440, label: "2K" },
+                      { resolution: "1080p", height: 1080, label: "1080p" },
+                      { resolution: "720p", height: 720, label: "720p" },
+                      { resolution: "480p", height: 480, label: "480p" },
+                      { resolution: "360p", height: 360, label: "360p" },
+                    ].map(preset => {
+                      return (
+                        <Button
+                          key={preset.resolution}
+                          variant={
+                            exportSettings.resolution === preset.resolution
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => {
+                            const [width, height] = cropSettings?.aspectRatio
+                              .split(":")
+                              .map(Number);
+                            setExportSettings({
+                              resolution: preset.resolution,
+                              filter: `scale=${
+                                Math.round(
+                                  (preset.height * width) / height / 2
+                                ) * 2
+                              }:${preset.height}`,
+                            });
+                          }}
+                        >
+                          {preset.label}
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -627,12 +569,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
               </>
             )}
           </div>
-          <div className="w-full">
-            <h2 className="text-2xl text-primary text-center mb-2">
-              Export Progress Percentage: {exportProgess?.string}
-            </h2>
-            <Progress value={exportProgess?.number} />
-          </div>
+          {isExporting && (
+            <div className="w-full">
+              <h2 className="text-2xl text-primary text-center mb-2">
+                Export Progress: {exportProgess?.string}%
+              </h2>
+              <Progress value={exportProgess?.number} />
+            </div>
+          )}
           <div className="flex items-center justify-center gap-x-10">
             <Button
               onClick={() => {
